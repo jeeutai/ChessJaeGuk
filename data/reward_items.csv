@@ -1,0 +1,31 @@
+id,name,description,price,type,effect,effect_value,duration,level_required,image_url,enabled
+reward1,포인트 더블러,24시간 동안 획득하는 포인트가 2배가 됩니다.,1000,buff,point_multiplier,2.0,24,1,/static/img/rewards/point_doubler.png,True
+reward2,게임 보너스 패키지,24시간 동안 모든 게임 승리 보상이 20% 증가합니다.,1500,buff,game_reward_boost,0.2,24,2,/static/img/rewards/game_bonus.png,True
+reward3,송금 수수료 면제권,다음 송금 시 수수료가 면제됩니다.,500,instant,waive_transfer_fee,1.0,0,1,/static/img/rewards/fee_waiver.png,True
+reward4,친구 슬롯 확장,친구 목록 최대 인원이 5명 증가합니다.,2000,permanent,friend_slot_increase,5,0,3,/static/img/rewards/friend_slot.png,True
+reward5,VIP 뱃지,프로필에 표시되는 VIP 뱃지입니다.,5000,cosmetic,vip_badge,1,0,5,/static/img/rewards/vip_badge.png,True
+reward6,특별한 아바타,희귀한 특별 아바타를 획득합니다.,3000,cosmetic,special_avatar,1,0,4,/static/img/rewards/special_avatar.png,True
+reward7,레벨업 부스터,경험치 포인트를 즉시 500점 획득합니다.,2500,instant,point_boost,500,0,2,/static/img/rewards/level_booster.png,True
+reward8,골든 프레임,프로필 사진에 골드 프레임이 적용됩니다.,4000,cosmetic,golden_frame,1,0,7,/static/img/rewards/golden_frame.png,True
+reward9,럭키 카드,무작위 보상을 획득할 수 있는 카드입니다.,800,instant,random_reward,1,0,1,/static/img/rewards/lucky_card.png,True
+reward10,주식 거래 수수료 할인,일주일 동안 주식 거래 수수료가 50% 할인됩니다.,2000,buff,stock_fee_discount,0.5,168,3,/static/img/rewards/stock_discount.png,True
+reward11,마켓 할인 쿠폰,마켓 아이템 구매 시 한 번 사용할 수 있는 20% 할인 쿠폰입니다.,1200,instant,market_discount,0.2,0,2,/static/img/rewards/market_coupon.png,True
+reward12,레어 배경화면,프로필 배경으로 사용할 수 있는 레어 배경화면입니다.,3500,cosmetic,rare_background,1,0,5,/static/img/rewards/rare_background.png,True
+reward13,경험치 부스터,일주일 동안 획득하는 경험치가 15% 증가합니다.,1800,buff,exp_boost,0.15,168,3,/static/img/rewards/exp_booster.png,True
+reward14,보물 상자,다양한 아이템을 얻을 수 있는 보물 상자입니다.,5000,instant,treasure_chest,1,0,4,/static/img/rewards/treasure_chest.png,True
+reward15,에픽 칭호,프로필에 표시되는 에픽 등급의 칭호입니다.,4500,cosmetic,epic_title,1,0,6,/static/img/rewards/epic_title.png,True
+reward16,인벤토리 확장,아이템 인벤토리 최대 공간이 10개 증가합니다.,3000,permanent,inventory_increase,10,0,4,/static/img/rewards/inventory_increase.png,True
+reward17,주식 정보 부스터,주식 거래 시 추가 정보를 제공받습니다.,2500,buff,stock_info,1,48,5,/static/img/rewards/stock_info.png,True
+reward18,게임 티켓 패키지,무료 게임 티켓 5장을 획득합니다.,1000,instant,game_tickets,5,0,2,/static/img/rewards/game_tickets.png,True
+reward19,수집가 뱃지,프로필에 표시되는 수집가 뱃지입니다.,2000,cosmetic,collector_badge,1,0,3,/static/img/rewards/collector_badge.png,True
+reward20,로열티 카드,포인트 샵에서 일정 기간 동안 추가 할인을 제공합니다.,3500,buff,loyalty_discount,0.1,72,4,/static/img/rewards/loyalty_card.png,True
+reward21,확률 부스터,모든 확률 기반 게임의 승률이 10% 증가합니다.,3000,buff,luck_boost,0.1,48,5,/static/img/rewards/luck_booster.png,True
+reward22,스페셜 이모티콘 세트,채팅에서 사용할 수 있는 특별한 이모티콘 세트입니다.,1500,cosmetic,special_emoticons,1,0,2,/static/img/rewards/emoticon_set.png,True
+reward23,일일 로그인 보너스 더블러,일주일 동안 일일 로그인 보너스가 2배가 됩니다.,2000,buff,login_bonus_multiplier,2.0,168,3,/static/img/rewards/login_doubler.png,True
+reward24,전설의 칭호,프로필에 표시되는 전설 등급의 칭호입니다.,10000,cosmetic,legendary_title,1,0,10,/static/img/rewards/legendary_title.png,True
+reward25,VIP 멤버십,한 달 동안 다양한 VIP 혜택을 제공받습니다.,15000,buff,vip_membership,1,720,8,/static/img/rewards/vip_membership.png,True
+reward26,영원한 영광,프로필에 영원히 표시되는 특별한 훈장입니다.,20000,cosmetic,eternal_glory,1,0,12,/static/img/rewards/eternal_glory.png,True
+reward27,퀘스트 부스터,일주일 동안 모든 퀘스트 보상이 20% 증가합니다.,2500,buff,quest_reward_boost,0.2,168,4,/static/img/rewards/quest_booster.png,True
+reward28,레벨 건너뛰기,즉시 레벨을 1 올릴 수 있는 아이템입니다.,10000,instant,level_skip,1,0,7,/static/img/rewards/level_skip.png,True
+reward29,커스텀 프로필 꾸미기,프로필을 자유롭게 꾸밀 수 있는 권한을 획득합니다.,7500,permanent,custom_profile,1,0,6,/static/img/rewards/custom_profile.png,True
+reward30,명예의 전당 입성,명예의 전당에 이름이 등재됩니다.,50000,cosmetic,hall_of_fame,1,0,15,/static/img/rewards/hall_of_fame.png,True

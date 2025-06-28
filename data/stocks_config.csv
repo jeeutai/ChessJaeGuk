@@ -1,0 +1,21 @@
+id,name,symbol,sector,initial_price,current_price,volatility,min_price,max_price,daily_limit_up,daily_limit_down,last_updated,enabled,description,logo_url
+CHESS,체스제국,CHESS,정부,10000,10000,1.5,5000,30000,5.0,5.0,2025-05-04 00:00:00,True,체스제국 중앙은행 채권,/static/img/stocks/chess.png
+CBID,체스뱅크,CBID,금융,5000,5000,2.0,2000,10000,8.0,8.0,2025-05-04 00:00:00,True,체스제국 대표 은행,/static/img/stocks/cbid.png
+TECH,테크노바,TECH,기술,8000,8000,3.0,3000,20000,10.0,10.0,2025-05-04 00:00:00,True,첨단 기술 연구 기업,/static/img/stocks/tech.png
+FOOD,푸드마스터,FOOD,소비재,3000,3000,1.2,1000,6000,5.0,5.0,2025-05-04 00:00:00,True,식품 제조 회사,/static/img/stocks/food.png
+PHRM,메디팜,PHRM,의료,7000,7000,2.5,3500,15000,7.0,7.0,2025-05-04 00:00:00,True,제약 회사,/static/img/stocks/phrm.png
+ENRG,에너지웨이,ENRG,에너지,6000,6000,2.2,2500,12000,6.0,6.0,2025-05-04 00:00:00,True,신재생 에너지 기업,/static/img/stocks/enrg.png
+MATL,자원공사,MATL,원자재,4000,4000,1.8,1500,8000,7.0,7.0,2025-05-04 00:00:00,True,광물 채굴 기업,/static/img/stocks/matl.png
+TELE,텔레콤,TELE,통신,5500,5500,1.5,3000,9000,5.0,5.0,2025-05-04 00:00:00,True,통신 서비스 제공 업체,/static/img/stocks/tele.png
+AUTO,오토모티브,AUTO,자동차,6500,6500,2.3,3000,12000,8.0,8.0,2025-05-04 00:00:00,True,자동차 제조 기업,/static/img/stocks/auto.png
+AERO,에어스페이스,AERO,항공,9000,9000,2.8,4000,18000,9.0,9.0,2025-05-04 00:00:00,True,항공우주 연구 기업,/static/img/stocks/aero.png
+GAME,게임테크,GAME,엔터테인먼트,4500,4500,3.5,1500,10000,12.0,12.0,2025-05-04 00:00:00,True,게임 개발 회사,/static/img/stocks/game.png
+SHOP,쇼핑몰,SHOP,유통,3500,3500,1.7,1500,7000,6.0,6.0,2025-05-04 00:00:00,True,온라인 쇼핑 플랫폼,/static/img/stocks/shop.png
+REAL,부동산개발,REAL,부동산,7500,7500,1.3,5000,12000,4.0,4.0,2025-05-04 00:00:00,True,부동산 개발 기업,/static/img/stocks/real.png
+EDU,에듀테크,EDU,교육,2800,2800,1.6,1000,5000,6.0,6.0,2025-05-04 00:00:00,True,교육 기술 회사,/static/img/stocks/edu.png
+FASH,패션브랜드,FASH,의류,3200,3200,2.0,1200,6500,7.0,7.0,2025-05-04 00:00:00,True,패션 브랜드 회사,/static/img/stocks/fash.png
+CONS,건설사,CONS,건설,5200,5200,1.4,3000,8000,5.0,5.0,2025-05-04 00:00:00,True,대형 건설 회사,/static/img/stocks/cons.png
+SFTW,소프트웨어,SFTW,소프트웨어,6200,6200,2.8,2500,15000,9.0,9.0,2025-05-04 00:00:00,True,소프트웨어 개발 기업,/static/img/stocks/sftw.png
+AGRI,농업과학,AGRI,농업,2500,2500,1.5,1000,5000,5.0,5.0,2025-05-04 00:00:00,True,농업 기술 연구 기업,/static/img/stocks/agri.png
+SHIP,해운물류,SHIP,운송,4800,4800,1.9,2000,9000,6.0,6.0,2025-05-04 00:00:00,True,해상 물류 회사,/static/img/stocks/ship.png
+TOUR,관광레저,TOUR,관광,3800,3800,2.2,1500,8000,7.0,7.0,2025-05-04 00:00:00,True,관광 및 레저 사업체,/static/img/stocks/tour.png

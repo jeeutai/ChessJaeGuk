@@ -1,0 +1,31 @@
+id,title,description,type,goal_action,goal_value,reward_type,reward_value,difficulty,time_limit_hours,prerequisite_quest_id,enabled
+daily1,송금 3회 하기,오늘 송금을 3회 이상 해보세요.,daily,transfer_count,3,points,15,easy,24,,True
+daily2,게임 5회 플레이,오늘 게임을 5회 이상 플레이해보세요.,daily,game_play_count,5,points,15,easy,24,,True
+daily3,채팅 10회 하기,오늘 채팅 메시지를 10회 이상 작성해보세요.,daily,chat_message_count,10,points,10,easy,24,,True
+daily4,주식 3회 거래하기,오늘 주식을 3회 이상 거래해보세요.,daily,stock_trade_count,3,points,20,medium,24,,True
+daily5,마켓에서 구매하기,오늘 마켓에서 아이템을 1개 이상 구매해보세요.,daily,market_purchase_count,1,points,15,easy,24,,True
+daily6,친구에게 인사하기,오늘 친구에게 채팅으로 인사를 보내세요.,daily,friend_chat_count,1,points,10,easy,24,,True
+daily7,주식 1만안 수익내기,오늘 주식으로 1만안 이상의 수익을 내보세요.,daily,stock_profit,10000,points,30,hard,24,,True
+daily8,카드 게임 3회 승리,오늘 카드 게임에서 3회 이상 승리해보세요.,daily,game_win_specific,cards:3,points,25,medium,24,,True
+daily9,5천안 송금하기,오늘 총 5천안 이상 송금해보세요.,daily,transfer_amount,5000,points,20,medium,24,,True
+daily10,프로필 업데이트,오늘 프로필 정보를 업데이트해보세요.,daily,profile_update,1,points,10,easy,24,,True
+daily11,친구 추가하기,오늘 새 친구를 1명 이상 추가해보세요.,daily,friend_add_count,1,points,15,easy,24,,True
+daily12,게임에서 1천안 획득,오늘 게임을 통해 총 1천안 이상 획득해보세요.,daily,game_profit,1000,points,20,medium,24,,True
+daily13,1만안 이상 송금받기,오늘 누군가로부터 총 1만안 이상 송금받아보세요.,daily,receive_transfer_amount,10000,points,20,medium,24,,True
+daily14,틱택토 게임 승리,오늘 틱택토 게임에서 1회 이상 승리해보세요.,daily,game_win_specific,tictactoe:1,points,15,easy,24,,True
+daily15,가위바위보 게임 승리,오늘 가위바위보 게임에서 1회 이상 승리해보세요.,daily,game_win_specific,rps:1,points,15,easy,24,,True
+weekly1,30회 송금하기,이번 주에 총 30회 이상 송금해보세요.,weekly,transfer_count,30,points,50,medium,168,,True
+weekly2,게임 20회 승리,이번 주에 게임에서 총 20회 이상 승리해보세요.,weekly,game_win_count,20,points,75,hard,168,,True
+weekly3,10만안 송금하기,이번 주에 총 10만안 이상 송금해보세요.,weekly,transfer_amount,100000,points,100,hard,168,,True
+weekly4,주식 10회 거래,이번 주에 주식을 총 10회 이상 거래해보세요.,weekly,stock_trade_count,10,points,50,medium,168,,True
+weekly5,주식 2만안 수익내기,이번 주에 주식으로 2만안 이상의 수익을 내보세요.,weekly,stock_profit,20000,points,100,hard,168,,True
+weekly6,마켓에서 5개 구매,이번 주에 마켓에서 총 5개 이상의 아이템을 구매해보세요.,weekly,market_purchase_count,5,points,50,medium,168,,True
+weekly7,친구 3명 추가,이번 주에 새 친구를 3명 이상 추가해보세요.,weekly,friend_add_count,3,points,75,medium,168,,True
+weekly8,모든 종류의 게임 플레이,이번 주에 모든 종류의 게임을 한 번씩 플레이해보세요.,weekly,play_all_games,1,points,100,hard,168,,True
+weekly9,5일 연속 로그인,이번 주에 5일 연속으로 로그인해보세요.,weekly,login_streak,5,points,50,easy,168,,True
+weekly10,VIP 사용자 송금,이번 주에 VIP 등급의 사용자에게 송금해보세요.,weekly,transfer_to_vip,1,points,50,medium,168,,True
+weekly11,3명의 친구와 채팅,이번 주에 3명 이상의 서로 다른 친구와 채팅해보세요.,weekly,chat_with_friends,3,points,50,medium,168,,True
+weekly12,업적 3개 달성,이번 주에 새로운 업적을 3개 이상 달성해보세요.,weekly,achievement_complete,3,points,100,hard,168,,True
+weekly13,일일 퀘스트 10개 완료,이번 주에 일일 퀘스트를 10개 이상 완료해보세요.,weekly,daily_quest_complete,10,points,100,medium,168,daily1,True
+weekly14,총 자산 100만안 달성,이번 주에 총 자산(현금+주식) 100만안을 달성해보세요.,weekly,total_asset_reach,1000000,points,150,extreme,168,,True
+weekly15,3일 연속 송금,이번 주에 3일 연속으로 송금을 해보세요.,weekly,transfer_streak,3,points,75,medium,168,,True

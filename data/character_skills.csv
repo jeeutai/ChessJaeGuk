@@ -1,0 +1,10 @@
+﻿id,character_id,skill_name,skill_level,skill_type,skill_description,mp_cost,damage_multiplier
+1,1,파이어볼,1,magic,강력한 화염구를 발사합니다,30,1.5
+2,1,더블 슬래시,1,physical,연속 베기 공격을 가합니다,25,1.3
+3,1,힐링,1,heal,HP를 회복합니다,40,0.8
+4,2,아이스 볼트,1,magic,얼음 화살을 발사합니다,25,1.4
+5,2,강화,1,buff,일시적으로 공격력이 증가합니다,20,1.2
+6,2,약화,1,debuff,대상의 방어력을 감소시킵니다,30,0.7
+7,3,번개 베기,1,magic,번개의 힘을 실은 베기,35,1.6
+8,3,방패 막기,1,defense,다음 공격을 방어합니다,20,0.5
+9,3,생명력 흡수,1,drain,상대방의 HP를 흡수합니다,40,1.1

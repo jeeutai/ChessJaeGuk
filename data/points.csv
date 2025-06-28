@@ -1,0 +1,31 @@
+action_code,name,description,base_points,cooldown_minutes,daily_limit,enabled
+login,로그인,일일 로그인 보상 포인트,10,1440,1,True
+login_streak,연속 로그인,연속 로그인 추가 보상,5,1440,1,True
+profile_update,프로필 업데이트,프로필 정보 업데이트 보상,5,1440,1,True
+transfer_send,송금 전송,송금 시 포인트 적립,2,0,50,True
+transfer_receive,송금 수신,송금 받을 시 포인트 적립,1,0,50,True
+game_play,게임 플레이,게임 참여 시 포인트 적립,5,5,20,True
+game_win,게임 승리,게임 승리 시 보너스 포인트,10,5,20,True
+stock_buy,주식 구매,주식 구매 시 포인트 적립,2,0,50,True
+stock_sell,주식 판매,주식 판매 시 포인트 적립,2,0,50,True
+stock_profit,주식 수익,주식 수익 발생 시 포인트 적립,5,0,50,True
+market_purchase,마켓 구매,마켓에서 아이템 구매 시 포인트 적립,3,0,30,True
+friend_add,친구 추가,새 친구 추가 시 포인트 적립,5,0,10,True
+friend_refer,친구 추천,친구 추천 시 포인트 적립,20,0,5,True
+chat_message,채팅 메시지,채팅 메시지 작성 시 포인트 적립,1,1,30,True
+achievement_complete,업적 완료,업적 달성 시 추가 포인트 적립,50,0,0,True
+level_up,레벨 업,레벨 상승 시 포인트 적립,100,0,0,True
+daily_quest,일일 퀘스트,일일 퀘스트 완료 시 포인트 적립,15,1440,3,True
+weekly_quest,주간 퀘스트,주간 퀘스트 완료 시 포인트 적립,50,10080,2,True
+review_write,리뷰 작성,시스템 리뷰 작성 시 포인트 적립,30,10080,1,True
+bug_report,버그 리포트,유효한 버그 리포트 제출 시 포인트 적립,50,0,3,True
+survey_complete,설문 참여,설문조사 참여 시 포인트 적립,20,0,2,True
+social_share,소셜 공유,SNS 공유 시 포인트 적립,10,1440,3,True
+email_verify,이메일 인증,이메일 인증 완료 시 포인트 적립,30,0,1,True
+phone_verify,전화번호 인증,전화번호 인증 완료 시 포인트 적립,30,0,1,True
+id_verify,신분증 인증,신분증 인증 완료 시 포인트 적립,100,0,1,True
+birthday_bonus,생일 보너스,생일 축하 보너스 포인트,100,525600,1,True
+anniversary_bonus,가입 기념일,가입 기념일 보너스 포인트,50,525600,1,True
+seasonal_event,시즌 이벤트,시즌 이벤트 참여 포인트,20,1440,5,True
+admin_reward,관리자 보상,관리자에 의한 보상 포인트,0,0,0,True
+vip_bonus,VIP 보너스,VIP 회원 추가 보너스 포인트,5,1440,1,True

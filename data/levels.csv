@@ -1,0 +1,16 @@
+level,title,required_points,bonus_reward,description,icon_url,enabled
+1,초보자,0,0,체스제국 송금 시스템에 가입한 초보 사용자입니다.,/static/img/levels/level1.png,True
+2,견습생,1000,500,기본적인 시스템 기능을 익힌 견습생입니다.,/static/img/levels/level2.png,True
+3,일반 사용자,3000,1000,체스제국 송금 시스템을 능숙하게 이용하는 사용자입니다.,/static/img/levels/level3.png,True
+4,숙련자,7000,2000,다양한 기능을 활용하는 숙련된 사용자입니다.,/static/img/levels/level4.png,True
+5,전문가,12000,3000,송금 시스템의 모든 기능을 자유자재로 사용하는 전문가입니다.,/static/img/levels/level5.png,True
+6,마스터,20000,5000,송금 시스템 마스터로 인정받는 수준입니다.,/static/img/levels/level6.png,True
+7,그랜드 마스터,30000,7000,그랜드 마스터로서 최고의 기술을 보유하고 있습니다.,/static/img/levels/level7.png,True
+8,레전드,50000,10000,송금 시스템의 레전드로 명성을 떨치고 있습니다.,/static/img/levels/level8.png,True
+9,챔피언,75000,15000,송금 시스템 챔피언의 자격을 갖추었습니다.,/static/img/levels/level9.png,True
+10,슈퍼 챔피언,100000,20000,슈퍼 챔피언으로서 최고의 명예를 얻었습니다.,/static/img/levels/level10.png,True
+11,타이탄,150000,25000,송금 시스템을 지배하는 타이탄급 사용자입니다.,/static/img/levels/level11.png,True
+12,제왕,200000,30000,송금 시스템의 제왕으로 군림합니다.,/static/img/levels/level12.png,True
+13,전설의 제왕,300000,50000,송금 시스템의 역사에 이름을 남길 전설의 제왕입니다.,/static/img/levels/level13.png,True
+14,신화의 존재,400000,75000,신화적인 능력을 가진 존재로 추앙받습니다.,/static/img/levels/level14.png,True
+15,불멸의 신,500000,100000,불멸의 신으로 추앙받는 최고 수준의 사용자입니다.,/static/img/levels/level15.png,True

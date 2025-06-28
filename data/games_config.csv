@@ -1,0 +1,21 @@
+id,name,description,min_bet,max_bet,enabled,win_multiplier,special_win_multiplier,draw_multiplier,icon_url,category,difficulty,cooldown_seconds,max_plays_daily
+running,러닝 게임,장애물을 피해 달리는 모바일 게임,100,10000,True,1.5,2.0,1.0,/static/img/games/running.png,아케이드,medium,60,20
+cards,정치인 카드 게임,카드를 모으고 겨루는 게임,200,5000,True,2.0,3.0,1.0,/static/img/games/cards.png,카드,easy,30,30
+casino,카지노 게임,룰렛과 슬롯머신 게임,500,20000,True,1.8,35.0,1.0,/static/img/games/casino.png,도박,hard,120,10
+tictactoe,틱택토,3x3 보드에서 즐기는 전략 게임,100,1000,True,2.0,0.0,1.0,/static/img/games/tictactoe.png,보드,easy,20,50
+rps,가위바위보,운에 의존하는 고전 게임,50,2000,True,1.8,0.0,1.0,/static/img/games/rps.png,미니게임,easy,10,100
+snake,스네이크 게임,뱀을 조종하여 먹이를 먹는 게임,200,5000,True,1.5,3.0,1.0,/static/img/games/snake.png,아케이드,medium,60,20
+betting,배팅 게임,숫자를 맞추는 배팅 게임,1000,50000,True,9.0,0.0,1.0,/static/img/games/betting.png,도박,extreme,180,5
+blackjack,블랙잭,21을 초과하지 않고 딜러보다 높은 점수를 얻는 카드 게임,200,10000,True,1.8,2.5,1.0,/static/img/games/blackjack.png,카드,medium,60,20
+dice,주사위 게임,주사위를 굴려 결과를 맞추는 게임,100,5000,True,2.0,6.0,1.0,/static/img/games/dice.png,미니게임,easy,30,30
+racing,경마,말 경주에 베팅하는 게임,500,10000,True,2.2,5.0,1.0,/static/img/games/racing.png,스포츠,medium,300,5
+fishing,낚시 게임,물고기를 낚아 포인트를 얻는 게임,100,2000,True,1.5,3.0,1.0,/static/img/games/fishing.png,시뮬레이션,easy,120,15
+bingo,빙고 게임,5x5 그리드에서 빙고를 완성하는 게임,200,3000,True,1.7,5.0,1.0,/static/img/games/bingo.png,보드,easy,180,10
+lotto,로또 게임,6개의 숫자를 선택하여 당첨을 노리는 게임,1000,5000,True,100.0,1000.0,1.0,/static/img/games/lotto.png,복권,extreme,86400,1
+hangman,행맨 게임,단어를 맞추는 고전 게임,50,500,True,1.5,0.0,1.0,/static/img/games/hangman.png,퍼즐,easy,60,20
+trivia,퀴즈 게임,다양한 주제의 퀴즈를 풀어 승리하는 게임,100,1000,True,1.8,3.0,1.0,/static/img/games/trivia.png,퀴즈,medium,120,15
+memorygame,메모리 게임,짝을 맞추는 기억력 게임,50,1000,True,1.6,2.0,1.0,/static/img/games/memory.png,퍼즐,easy,60,20
+puzzle,퍼즐 게임,조각을 맞춰 그림을 완성하는 게임,100,2000,True,1.7,0.0,1.0,/static/img/games/puzzle.png,퍼즐,medium,120,15
+wordle,단어 맞추기,5글자 단어를 6번 안에 맞추는 게임,100,1000,True,1.8,3.0,1.0,/static/img/games/wordle.png,퍼즐,medium,300,5
+mines,지뢰찾기,지뢰를 피해 모든 칸을 열어야 하는 게임,100,5000,True,2.0,10.0,1.0,/static/img/games/mines.png,미니게임,hard,120,15
+tetris,테트리스,떨어지는 블록을 맞춰 라인을 없애는 게임,200,3000,True,1.6,0.0,1.0,/static/img/games/tetris.png,아케이드,medium,180,10

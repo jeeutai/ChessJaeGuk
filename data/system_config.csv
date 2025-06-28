@@ -1,0 +1,54 @@
+key,value,description
+app_name,체스제국,앱 이름
+system_name,체스제국 송금 시스템,시스템 전체 이름
+country_name,체스제국,국가/조직 이름
+currency_name,체스머니,화폐 이름
+currency_symbol,CM,화폐 단위 기호
+primary_color,#3f51b5,시스템 주요 색상
+secondary_color,#f50057,시스템 보조 색상
+register_ip_check,True,회원가입 시 IP 확인 사용 여부
+login_ip_check,True,로그인 시 IP 확인 사용 여부
+initial_balance,10000,신규 회원 기본 지급 금액
+max_transfer_amount,1000000,최대 송금 가능 금액
+min_transfer_amount,100,최소 송금 가능 금액
+transfer_fee_percent,0,송금 수수료 퍼센트
+game_win_boost,10,게임 승리 시 보너스 % (기본 10%)
+market_discount,0,마켓 아이템 할인율 % (기본 0%)
+enable_chat,True,채팅 기능 활성화 여부
+enable_stocks,True,주식 기능 활성화 여부
+enable_games,True,게임 기능 활성화 여부
+enable_market,True,마켓 기능 활성화 여부
+enable_profile,True,프로필 기능 활성화 여부
+enable_transfer,True,송금 기능 활성화 여부
+enable_friends,True,친구 기능 활성화 여부
+maintenance_mode,False,시스템 유지보수 모드
+footer_message,© 2025 체스제국 송금 시스템,푸터 메시지
+admin_contact,admin@chess.com,관리자 연락처
+max_notice_count,5,메인화면에 표시할 최대 공지 수
+site_description,체스제국 송금 시스템: 모바일 친화적인 웹 기반 가상 화폐 플랫폼,사이트 설명
+daily_login_bonus,100,일일 로그인 보너스
+referral_bonus,1000,친구 추천 보너스
+service_level,standard,"서비스 수준 (standard, premium, enterprise)"
+password_min_length,4,비밀번호 최소 길이
+auto_logout_minutes,30,자동 로그아웃 시간(분)
+default_language,ko,기본 언어
+theme,light,"테마 (light, dark)"
+allow_guest_view,False,게스트 조회 허용
+max_failed_login,5,로그인 실패 최대 횟수
+enable_social_login,True,소셜 로그인 활성화 여부
+social_login_providers,"google,kakao,naver,facebook,apple",활성화된 소셜 로그인 제공자
+google_client_id,,Google OAuth 클라이언트 ID
+google_client_secret,,Google OAuth 클라이언트 비밀키
+kakao_client_id,,카카오 OAuth 클라이언트 ID
+naver_client_id,,네이버 OAuth 클라이언트 ID
+naver_client_secret,,네이버 OAuth 클라이언트 비밀키
+facebook_app_id,,Facebook 앱 ID
+facebook_app_secret,,Facebook 앱 비밀키
+apple_client_id,,Apple 클라이언트 ID
+apple_team_id,,Apple 팀 ID
+enable_character_battle,True,캐릭터 배틀 기능 활성화 여부
+battle_reward,100,배틀 승리 시 보상 금액
+battle_exp,50,배틀 승리 시 경험치
+battle_points,10,배틀 승리 시 포인트
+battle_cooldown_minutes,5,배틀 쿨다운 시간(분)
+battle_daily_limit,10,일일 배틀 제한 횟수

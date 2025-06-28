@@ -1,0 +1,4 @@
+id,name,effect,price,duration,max_uses,category,description,image_url
+1,자주포,3회 맞으면 즉시 퇴장,1500,7,3,무기,강력한 자주포로 대상을 공격합니다. 3회 누적 시 퇴장 조치됩니다.,/static/img/items/artillery.png
+2,ICBM,맞으면 강제퇴장,500000000,30,1,무기,대륙간 탄도 미사일로 단 한 번의 타격으로 즉시 퇴장시킵니다.,/static/img/items/icbm.png
+3,기관총,3분 채팅 금지,100,1,5,무기,빠른 연사 속도의 기관총입니다. 타격 시 3분간 채팅이 금지됩니다.,/static/img/items/machinegun.png

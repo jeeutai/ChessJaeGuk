@@ -1,0 +1,16 @@
+id,action,points,description,enable
+1,daily_login,10,매일 로그인 시 포인트 획득,True
+2,game_win,5,게임 승리 시 포인트 획득,True
+3,game_play,2,게임 참여 시 포인트 획득,True
+4,money_transfer,1,송금 시 포인트 획득(1000단위당),True
+5,profile_update,10,프로필 정보 업데이트 시 포인트 획득,True
+6,friend_add,15,친구 추가 시 포인트 획득,True
+7,chat_message,1,채팅 메시지 작성 시 포인트 획득,True
+8,item_purchase,3,아이템 구매 시 포인트 획득(1000단위당),True
+9,stock_trade,2,주식 거래 시 포인트 획득(1000단위당),True
+10,referral,50,친구 초대 시 포인트 획득,True
+11,achievement,100,업적 달성 시 포인트 획득,True
+12,level_up,25,레벨 업 시 포인트 획득,True
+13,streak_login,5,연속 로그인 보너스(일당),True
+14,first_game,20,첫 게임 참여 시 포인트 획득,True
+15,birthday,100,생일 축하 포인트,True

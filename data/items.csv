@@ -1,0 +1,17 @@
+id,name,category,price,effect,description,duration,max_uses,rarity,level_required,image_url,created_at,stock,enabled
+item001,자주포,무기,1500,force_quit_3,3회 맞으면 즉시 퇴장,0,3,rare,10,/static/img/items/artillery.png,2025-05-01,100,True
+item002,ICBM,무기,500000000,force_quit_instant,맞으면 강제퇴장,0,1,legendary,50,/static/img/items/icbm.png,2025-05-01,10,True
+item003,기관총,무기,100,chat_ban_3min,3분 채팅 금지,180,1,common,1,/static/img/items/machinegun.png,2025-05-01,1000,True
+item004,전기 충격기,무기,200,chat_ban_3min,3분 채팅 금지,180,1,common,1,/static/img/items/taser.png,2025-05-01,1000,True
+item005,수류탄,무기,50,emoji_ban_7d,7일 이모티콘 금지,10080,1,common,1,/static/img/items/grenade.png,2025-05-01,1000,True
+item006,화염방사기,무기,10000,chat_ban_1h,1시간 채팅 금지,60,1,rare,5,/static/img/items/flamethrower.png,2025-05-01,500,True
+item007,박격포,무기,100000000000000000,force_quit_10,10회 누적 시 강퇴,0,10,legendary,30,/static/img/items/mortar.png,2025-05-01,10,True
+item008,저격총,무기,5000000,chat_ban_12h,12시간 채팅 금지,720,1,epic,15,/static/img/items/sniper.png,2025-05-01,20,True
+item009,대전차 미사일,무기,1000,chat_ban_1h,1시간 채팅 금지,60,1,rare,5,/static/img/items/missile.png,2025-05-01,100,True
+item010,기관포,무기,1500,chat_ban_3d_3,3회 누적 시 3일 채팅 금지,4320,3,rare,10,/static/img/items/autocannon.png,2025-05-01,50,True
+item011,폭격기 공습,무기,9000,chat_ban_7d,일주일 채팅 금지,10080,1,epic,20,/static/img/items/bomber.png,2025-05-01,20,True
+item012,지뢰 제거용 폭탄,무기,500,msg_limit_5_7d,1주간 메시지 길이 5자 제한,10080,1,common,1,/static/img/items/mine.png,2025-05-01,200,True
+item013,드론 타격,무기,5000,mention_block,멘션 기능 차단,0,1,rare,5,/static/img/items/drone.png,2025-05-01,100,True
+item014,수면 가스,무기,5,silence_5min,5분 강제 침묵,5,1,common,1,/static/img/items/gas.png,2025-05-01,500,True
+item015,네이팜탄,무기,50000,perm_chat_ban_3,3회 누적 시 영구 채팅 금지,0,3,legendary,25,/static/img/items/napalm.png,2025-05-01,10,True
+item016,핵미사일,무기,99999999999999999999999999999999999999999999999999999999999999999999999999999999999,delete_chat,채팅방 삭제,0,1,legendary,99,/static/img/items/nuke.png,2025-05-01,1,True

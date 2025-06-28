@@ -1,0 +1,21 @@
+id,name,party,power,special,image_url,description,approval_rating,term_start,term_end,policies,active
+1,김대통령,국민당,9,True,/static/img/politicians/president.png,체스제국의 현 대통령입니다. 경제 성장과 복지에 중점을 두고 있습니다.,78,2020-01-01,2025-01-01,"경제성장,복지확대,교육개혁",True
+2,이부총리,국민당,8,False,/static/img/politicians/vicepresident.png,현 부총리 겸 재정부 장관으로 국가 경제를 책임지고 있습니다.,72,2020-01-01,2025-01-01,"재정건전화,일자리창출",True
+3,박장관,국민당,7,False,/static/img/politicians/minister1.png,체스제국 국방부 장관으로 국방 정책을 총괄합니다.,65,2021-06-01,2025-01-01,"국방개혁,군사훈련강화",True
+4,정장관,국민당,7,False,/static/img/politicians/minister2.png,체스제국 외교부 장관으로 외교 정책을 담당하고 있습니다.,70,2020-03-15,2025-01-01,"국제협력,평화정책",True
+5,최의원,국민당,6,False,/static/img/politicians/mp1.png,여당 원내대표로 정부 정책을 의회에서 지원합니다.,65,2022-05-10,2026-05-10,"정부지원,당정협력",True
+6,윤의원,진보당,6,False,/static/img/politicians/mp2.png,야당 대표로 정부 정책에 대한 견제 역할을 합니다.,62,2022-05-10,2026-05-10,"정부견제,민생개혁",True
+7,강시장,국민당,5,False,/static/img/politicians/mayor1.png,체스시티 시장으로 지역 경제 활성화에 힘쓰고 있습니다.,75,2022-07-01,2026-07-01,"지역경제,도시개발",True
+8,서지사,진보당,5,False,/static/img/politicians/governor1.png,체스주 지사로 지역 특화 산업 육성에 주력하고 있습니다.,68,2023-01-01,2027-01-01,"지역산업,환경보호",True
+9,황장관,연합당,7,False,/static/img/politicians/minister3.png,체스제국 경제부 장관으로 경제 정책을 총괄합니다.,66,2021-09-01,2025-01-01,"규제혁신,산업육성",True
+10,손의원,연합당,6,False,/static/img/politicians/mp3.png,제3당 대표로 중도 노선을 걷고 있습니다.,60,2022-05-10,2026-05-10,"중도정책,사회안정",True
+11,문전대통령,진보당,7,True,/static/img/politicians/expresident.png,체스제국의 전임 대통령으로 사회 통합에 기여했습니다.,65,2015-01-01,2020-01-01,"사회통합,평화정책",True
+12,오장관,국민당,7,False,/static/img/politicians/minister4.png,체스제국 교육부 장관으로 교육 정책을 담당하고 있습니다.,69,2022-01-01,2025-01-01,"교육혁신,평생학습",True
+13,조시장,진보당,5,False,/static/img/politicians/mayor2.png,루크타운 시장으로 지역 문화 발전에 기여하고 있습니다.,72,2022-07-01,2026-07-01,"문화발전,시민참여",True
+14,남의원,국민당,5,False,/static/img/politicians/mp4.png,체스제국 국회의장으로 의회를 이끌고 있습니다.,65,2022-05-10,2026-05-10,"의회개혁,초당협력",True
+15,배장관,연합당,7,False,/static/img/politicians/minister5.png,체스제국 복지부 장관으로 복지 정책을 총괄합니다.,70,2021-03-01,2025-01-01,"복지확대,사회안전망",True
+16,유위원장,국민당,8,True,/static/img/politicians/chairman1.png,체스제국 중앙은행 총재로 금융 정책을 담당하고 있습니다.,75,2023-01-01,2028-01-01,"금융안정,통화정책",True
+17,마장관,진보당,7,False,/static/img/politicians/minister6.png,체스제국 환경부 장관으로 환경 정책을 담당하고 있습니다.,68,2022-01-01,2025-01-01,"환경보호,지속가능발전",True
+18,노위원장,연합당,8,True,/static/img/politicians/chairman2.png,체스제국 금융위원회 위원장으로 금융 규제를 담당합니다.,72,2021-07-01,2025-07-01,"금융규제,투자활성화",True
+19,백의원,진보당,5,False,/static/img/politicians/mp5.png,야당 원내대표로 정부 정책을 비판적으로 검토합니다.,63,2022-05-10,2026-05-10,"정부감시,민생우선",True
+20,권장관,국민당,7,False,/static/img/politicians/minister7.png,체스제국 과학기술부 장관으로 과학 정책을 담당합니다.,71,2021-11-01,2025-01-01,"기술혁신,연구개발",True
