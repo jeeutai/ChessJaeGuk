@@ -1,0 +1,649 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .friends-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .friend-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .friend-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  
+  .friend-avatar {
+    width: 60px;
+    height: 60px;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  
+  .friend-avatar i {
+    color: #757575;
+  }
+  
+  .online-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border: 2px solid white;
+  }
+  
+  .offline-indicator {
+    background-color: #9e9e9e;
+  }
+  
+  .friend-actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .friend-tabs {
+    margin-bottom: 20px;
+  }
+  
+  .search-result {
+    transition: background-color 0.2s;
+  }
+  
+  .search-result:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .badge-friendship {
+    font-size: 0.7em;
+    margin-left: 5px;
+  }
+  
+  .friend-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .mutual-friends {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #757575;
+  }
+  
+  .mutual-avatars {
+    display: flex;
+    margin-left: 5px;
+  }
+  
+  .mutual-avatar {
+    width: 20px;
+    height: 20px;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    margin-left: -5px;
+    border: 1px solid white;
+  }
+  
+  .activity-log {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .activity-item {
+    border-left: 3px solid #e0e0e0;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    position: relative;
+  }
+  
+  .activity-item::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    left: -7.5px;
+    top: 0;
+  }
+  
+  .activity-item.friend-add::before {
+    background-color: #4CAF50;
+  }
+  
+  .activity-item.friend-remove::before {
+    background-color: #F44336;
+  }
+  
+  .activity-item.game-play::before {
+    background-color: #2196F3;
+  }
+  
+  .activity-item.money-transfer::before {
+    background-color: #FF9800;
+  }
+  
+  .activity-time {
+    font-size: 12px;
+    color: #757575;
+  }
+  
+  .friend-list-empty {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 30px;
+  }
+  
+  .empty-icon {
+    font-size: 48px;
+    color: #bdbdbd;
+    margin-bottom: 15px;
+  }
+  
+  .favorite-friend {
+    color: #FFC107;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .friend-request-animation {
+    animation: pulse 1s infinite;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="friends-container">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h2 class="mb-0"><i class="fas fa-user-friends me-2"></i>친구 관리</h2>
+        <div class="card-actions">
+          <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addFriendModal">
+            <i class="fas fa-user-plus me-2"></i>친구 추가
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <!-- 탭 메뉴 -->
+        <ul class="nav nav-tabs friend-tabs" id="friendTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab" aria-controls="friends" aria-selected="true">
+              <i class="fas fa-user-friends me-2"></i>친구 목록
+              <span class="badge bg-primary ms-2" id="friendCount">{{ friends|length }}</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab" aria-controls="requests" aria-selected="false">
+              <i class="fas fa-user-clock me-2"></i>친구 요청
+              <span class="badge bg-danger ms-2" id="requestCount">{{ friend_requests|length }}</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab" aria-controls="activity" aria-selected="false">
+              <i class="fas fa-history me-2"></i>활동 내역
+            </button>
+          </li>
+        </ul>
+        
+        <!-- 탭 내용 -->
+        <div class="tab-content" id="friendTabsContent">
+          <!-- 친구 목록 탭 -->
+          <div class="tab-pane fade show active" id="friends" role="tabpanel" aria-labelledby="friends-tab">
+            <div class="input-group mb-3 mt-3">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control" placeholder="친구 검색..." id="friendSearch">
+            </div>
+            
+            <div class="row g-3" id="friendsList">
+              {% if friends %}
+                {% for friend in friends %}
+                <div class="col-md-6 col-lg-4 friend-item">
+                  <div class="card friend-card">
+                    <div class="card-body d-flex align-items-center">
+                      <div class="friend-avatar position-relative">
+                        <i class="fas fa-user"></i>
+                        <div class="online-indicator {% if not friend.is_online %}offline-indicator{% endif %}"></div>
+                      </div>
+                      <div class="friend-info flex-grow-1">
+                        <h5 class="mb-0">{{ friend.nickname }}
+                          {% if friend.is_favorite %}
+                          <i class="fas fa-star favorite-friend"></i>
+                          {% endif %}
+                        </h5>
+                        <div class="friend-status">
+                          <small class="text-muted">{{ friend.status_message }}</small>
+                        </div>
+                        <div class="mutual-friends">
+                          <span>함께 아는 친구 {{ friend.mutual_friends }}명</span>
+                          <div class="mutual-avatars">
+                            {% for i in range(min(3, friend.mutual_friends)) %}
+                            <div class="mutual-avatar">
+                              <i class="fas fa-user" style="font-size: 8px;"></i>
+                            </div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="friend-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="sendMoney('{{ friend.id }}')">
+                          <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="toggleFavorite('{{ friend.id }}')">
+                          <i class="fas {% if friend.is_favorite %}fa-star{% else %}fa-star-o{% endif %}"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeFriend('{{ friend.id }}')">
+                          <i class="fas fa-user-minus"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="col-12">
+                  <div class="friend-list-empty">
+                    <div class="empty-icon">
+                      <i class="fas fa-user-friends"></i>
+                    </div>
+                    <h5>친구 목록이 비어있습니다</h5>
+                    <p class="text-muted">새로운 친구를 추가해보세요!</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFriendModal">
+                      <i class="fas fa-user-plus me-2"></i>친구 추가하기
+                    </button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- 친구 요청 탭 -->
+          <div class="tab-pane fade" id="requests" role="tabpanel" aria-labelledby="requests-tab">
+            <div class="mt-3">
+              <h5 class="mb-3">받은 친구 요청</h5>
+              {% if friend_requests %}
+                <div class="list-group">
+                  {% for request in friend_requests %}
+                  <div class="list-group-item list-group-item-action d-flex align-items-center">
+                    <div class="friend-avatar position-relative">
+                      <i class="fas fa-user"></i>
+                    </div>
+                    <div class="friend-info flex-grow-1">
+                      <h5 class="mb-0">{{ request.nickname }}</h5>
+                      <small class="text-muted">{{ request.sent_time }}</small>
+                    </div>
+                    <div class="friend-actions">
+                      <button class="btn btn-success btn-sm me-2" onclick="acceptRequest('{{ request.id }}')">
+                        <i class="fas fa-check me-1"></i>수락
+                      </button>
+                      <button class="btn btn-danger btn-sm" onclick="rejectRequest('{{ request.id }}')">
+                        <i class="fas fa-times me-1"></i>거절
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i>새로운 친구 요청이 없습니다.
+                </div>
+              {% endif %}
+              
+              <h5 class="mb-3 mt-4">보낸 친구 요청</h5>
+              {% if sent_requests %}
+                <div class="list-group">
+                  {% for request in sent_requests %}
+                  <div class="list-group-item list-group-item-action d-flex align-items-center">
+                    <div class="friend-avatar position-relative">
+                      <i class="fas fa-user"></i>
+                    </div>
+                    <div class="friend-info flex-grow-1">
+                      <h5 class="mb-0">{{ request.nickname }}</h5>
+                      <small class="text-muted">{{ request.sent_time }}</small>
+                    </div>
+                    <div class="friend-actions">
+                      <button class="btn btn-outline-danger btn-sm" onclick="cancelRequest('{{ request.id }}')">
+                        <i class="fas fa-times me-1"></i>취소
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i>보낸 친구 요청이 없습니다.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- 활동 내역 탭 -->
+          <div class="tab-pane fade" id="activity" role="tabpanel" aria-labelledby="activity-tab">
+            <div class="activity-log mt-3">
+              {% if activities %}
+                {% for activity in activities %}
+                <div class="activity-item {{ activity.type }}">
+                  <div class="activity-content">
+                    {{ activity.message|safe }}
+                    <div class="activity-time">{{ activity.timestamp }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i>활동 내역이 없습니다.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 친구 추천 카드 -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-info text-white">
+        <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>맞춤 친구 추천</h4>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% if friend_recommendations %}
+            {% for recommendation in friend_recommendations %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card">
+                <div class="card-body d-flex align-items-center">
+                  <div class="friend-avatar position-relative">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div class="friend-info flex-grow-1">
+                    <h5 class="mb-0">{{ recommendation.nickname }}</h5>
+                    <div class="mutual-friends">
+                      <span>함께 아는 친구 {{ recommendation.mutual_friends }}명</span>
+                    </div>
+                  </div>
+                  <div class="friend-actions">
+                    <button class="btn btn-sm btn-primary" onclick="sendFriendRequest('{{ recommendation.id }}')">
+                      <i class="fas fa-user-plus me-1"></i>추가
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="col-12">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>현재 추천할 친구가 없습니다.
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 친구 추가 모달 -->
+  <div class="modal fade" id="addFriendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">친구 검색 및 추가</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="ID 또는 닉네임으로 검색..." id="friendSearchInput">
+            <button class="btn btn-outline-primary" type="button" id="searchFriendBtn">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+          
+          <div id="searchResults" class="mt-3">
+            <!-- 검색 결과가 여기에 표시됩니다 -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 송금 모달 -->
+  <div class="modal fade" id="sendMoneyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">친구에게 송금하기</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="sendMoneyForm" action="{{ url_for('auth.send_money') }}" method="post">
+            <input type="hidden" id="receiverId" name="receiver_id">
+            <div class="mb-3">
+              <label for="receiverName" class="form-label">받는 사람</label>
+              <input type="text" class="form-control" id="receiverName" readonly>
+            </div>
+            <div class="mb-3">
+              <label for="amount" class="form-label">송금 금액</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="amount" name="amount" min="1" max="{{ g.user.balance }}" required>
+                <span class="input-group-text">{{ currency_name }}</span>
+              </div>
+              <div class="form-text">최대 송금 가능 금액: {{ g.user.balance }}{{ currency_name }}</div>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-paper-plane me-2"></i>송금하기
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 친구 검색 기능
+    const friendSearch = document.getElementById('friendSearch');
+    if (friendSearch) {
+      friendSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const friendItems = document.querySelectorAll('.friend-item');
+        
+        friendItems.forEach(item => {
+          const friendName = item.querySelector('.friend-info h5').textContent.toLowerCase();
+          if (friendName.includes(searchTerm)) {
+            item.style.display = '';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+    }
+    
+    // 친구 검색 모달
+    const searchFriendBtn = document.getElementById('searchFriendBtn');
+    const friendSearchInput = document.getElementById('friendSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    if (searchFriendBtn && friendSearchInput) {
+      searchFriendBtn.addEventListener('click', function() {
+        const searchTerm = friendSearchInput.value.trim();
+        
+        if (searchTerm.length < 2) {
+          searchResults.innerHTML = '<div class="alert alert-warning">검색어는 2글자 이상 입력해주세요.</div>';
+          return;
+        }
+        
+        // 실제 구현에서는 Ajax로 서버에 요청
+        // 여기서는 예시 데이터 사용
+        setTimeout(() => {
+          const users = [
+            { id: 'user1', nickname: '김체스', status: 'none' },
+            { id: 'user2', nickname: '이체스', status: 'friend' },
+            { id: 'user3', nickname: '박체스', status: 'sent' },
+            { id: 'user4', nickname: '최체스', status: 'received' }
+          ];
+          
+          if (users.length > 0) {
+            let html = '<div class="list-group">';
+            
+            users.forEach(user => {
+              let buttonHtml = '';
+              let statusBadge = '';
+              
+              switch (user.status) {
+                case 'friend':
+                  buttonHtml = `<button class="btn btn-sm btn-secondary" disabled>
+                    <i class="fas fa-check me-1"></i>친구
+                  </button>`;
+                  statusBadge = '<span class="badge bg-success badge-friendship">친구</span>';
+                  break;
+                case 'sent':
+                  buttonHtml = `<button class="btn btn-sm btn-warning" disabled>
+                    <i class="fas fa-clock me-1"></i>요청 중
+                  </button>`;
+                  statusBadge = '<span class="badge bg-warning text-dark badge-friendship">요청 중</span>';
+                  break;
+                case 'received':
+                  buttonHtml = `<button class="btn btn-sm btn-success" onclick="acceptRequest('${user.id}')">
+                    <i class="fas fa-check me-1"></i>수락
+                  </button>`;
+                  statusBadge = '<span class="badge bg-danger badge-friendship">요청 받음</span>';
+                  break;
+                default:
+                  buttonHtml = `<button class="btn btn-sm btn-primary" onclick="sendFriendRequest('${user.id}')">
+                    <i class="fas fa-user-plus me-1"></i>친구 추가
+                  </button>`;
+              }
+              
+              html += `
+                <div class="list-group-item list-group-item-action d-flex align-items-center search-result">
+                  <div class="friend-avatar position-relative me-3">
+                    <i class="fas fa-user"></i>
+                  </div>
+                  <div class="friend-info flex-grow-1">
+                    <h5 class="mb-0">${user.nickname} ${statusBadge}</h5>
+                    <small class="text-muted">ID: ${user.id}</small>
+                  </div>
+                  <div class="friend-actions">
+                    ${buttonHtml}
+                  </div>
+                </div>
+              `;
+            });
+            
+            html += '</div>';
+            searchResults.innerHTML = html;
+          } else {
+            searchResults.innerHTML = '<div class="alert alert-info">검색 결과가 없습니다.</div>';
+          }
+        }, 500);
+      });
+      
+      // Enter 키로도 검색 가능
+      friendSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          searchFriendBtn.click();
+        }
+      });
+    }
+  });
+  
+  // 친구 요청 보내기
+  function sendFriendRequest(userId) {
+    // 실제 구현에서는 Ajax로 서버에 요청
+    alert(`${userId}에게 친구 요청을 보냈습니다.`);
+    // 모달 닫기
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addFriendModal'));
+    if (modal) modal.hide();
+  }
+  
+  // 친구 요청 수락
+  function acceptRequest(userId) {
+    // 실제 구현에서는 Ajax로 서버에 요청
+    alert(`${userId}의 친구 요청을 수락했습니다.`);
+    // 페이지 새로고침
+    //location.reload();
+  }
+  
+  // 친구 요청 거절
+  function rejectRequest(userId) {
+    // 실제 구현에서는 Ajax로 서버에 요청
+    alert(`${userId}의 친구 요청을 거절했습니다.`);
+    // 페이지 새로고침
+    //location.reload();
+  }
+  
+  // 친구 요청 취소
+  function cancelRequest(userId) {
+    // 실제 구현에서는 Ajax로 서버에 요청
+    alert(`${userId}에게 보낸 친구 요청을 취소했습니다.`);
+    // 페이지 새로고침
+    //location.reload();
+  }
+  
+  // 친구 삭제
+  function removeFriend(userId) {
+    if (confirm('정말로 이 친구를 삭제하시겠습니까?')) {
+      // 실제 구현에서는 Ajax로 서버에 요청
+      alert(`${userId} 친구가 삭제되었습니다.`);
+      // 페이지 새로고침
+      //location.reload();
+    }
+  }
+  
+  // 즐겨찾기 토글
+  function toggleFavorite(userId) {
+    // 실제 구현에서는 Ajax로 서버에 요청
+    alert(`${userId} 친구의 즐겨찾기 상태가 변경되었습니다.`);
+    // 페이지 새로고침
+    //location.reload();
+  }
+  
+  // 송금하기
+  function sendMoney(userId) {
+    // 실제 구현에서는 사용자 정보 가져오기
+    const userName = "친구 " + userId;
+    
+    // 모달에 정보 설정
+    document.getElementById('receiverId').value = userId;
+    document.getElementById('receiverName').value = userName;
+    
+    // 모달 열기
+    const modal = new bootstrap.Modal(document.getElementById('sendMoneyModal'));
+    modal.show();
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paper-plane me-2"></i>{{ country_name }} 송금 서비스
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.send_money') }}">
+                        <div class="mb-3">
+                            <label for="receiver_id" class="form-label">받는 사람 ID</label>
+                            <input type="text" class="form-control" id="receiver_id" name="receiver_id" required
+                                   placeholder="송금할 사용자의 ID를 입력하세요">
+                        </div>
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">송금액 ({{ currency_name }})</label>
+                            <input type="number" class="form-control" id="amount" name="amount" required
+                                   min="{{ min_amount }}" max="{{ max_amount }}"
+                                   placeholder="송금할 금액을 입력하세요">
+                            <div class="form-text">
+                                <small>송금 가능 범위: {{ min_amount }}{{ currency_name }} ~ {{ max_amount }}{{ currency_name }}</small>
+                                {% if fee_percent > 0 %}
+                                <br>
+                                <small class="text-danger">수수료 {{ fee_percent }}%가 부과됩니다.</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="current_balance" class="form-label">현재 잔액</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="current_balance" value="{{ g.user.balance }}{{ currency_name }}" readonly>
+                                <span class="input-group-text">
+                                    <i class="fas fa-coins"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="fee-preview" {% if fee_percent <= 0 %}style="display:none"{% endif %}>
+                            <label class="form-label">수수료 및 총 결제액</label>
+                            <div class="card bg-light">
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-6">송금액:</div>
+                                        <div class="col-6 text-end" id="send-amount">0{{ currency_name }}</div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">수수료({{ fee_percent }}%):</div>
+                                        <div class="col-6 text-end text-danger" id="fee-amount">0{{ currency_name }}</div>
+                                    </div>
+                                    <hr class="my-1">
+                                    <div class="row fw-bold">
+                                        <div class="col-6">총 결제액:</div>
+                                        <div class="col-6 text-end" id="total-amount">0{{ currency_name }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" id="send-button">
+                                <i class="fas fa-paper-plane me-2"></i>송금하기
+                            </button>
+                            <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>뒤로가기
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const sendAmount = document.getElementById('send-amount');
+    const feeAmount = document.getElementById('fee-amount');
+    const totalAmount = document.getElementById('total-amount');
+    const feePreview = document.getElementById('fee-preview');
+    const feePercent = {{ fee_percent }};
+    const currencyName = '{{ currency_name }}';
+    const currentBalance = parseInt('{{ g.user.balance }}');
+    const sendButton = document.getElementById('send-button');
+    
+    // 수수료가 있는 경우에만 계산 표시
+    if (feePercent > 0) {
+        feePreview.style.display = 'block';
+    }
+    
+    // 금액 입력 시 수수료 및 총액 계산
+    amountInput.addEventListener('input', function() {
+        const amount = parseInt(this.value) || 0;
+        const fee = Math.floor(amount * feePercent / 100);
+        const total = amount + fee;
+        
+        sendAmount.textContent = amount + currencyName;
+        feeAmount.textContent = fee + currencyName;
+        totalAmount.textContent = total + currencyName;
+        
+        // 잔액 부족 시 버튼 비활성화
+        if (total > currentBalance) {
+            sendButton.disabled = true;
+            sendButton.textContent = '잔액이 부족합니다';
+        } else {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane me-2"></i>송금하기';
+        }
+    });
+});
+</script>
+{% endblock %}

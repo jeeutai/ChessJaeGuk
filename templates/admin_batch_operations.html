@@ -1,0 +1,488 @@
+{% extends 'admin_layout.html' %}
+
+{% block title %}일괄 작업 관리{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include 'admin_sidebar.html' %}
+        
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">일괄 작업 관리</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#historyModal">
+                        작업 이력 보기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 대시보드 -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        총 사용자 수</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        일일 보너스 수령 비율</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ stats.daily_bonus_claimed }} / {{ stats.regular_users }}
+                                        ({{ (stats.daily_bonus_claimed / stats.regular_users * 100)|round(1) if stats.regular_users > 0 else 0 }}%)
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-gift fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        퀘스트 완료율</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ stats.completed_quests }} / {{ stats.total_quests * stats.regular_users }}
+                                        ({{ (stats.completed_quests / (stats.total_quests * stats.regular_users) * 100)|round(1) if stats.total_quests * stats.regular_users > 0 else 0 }}%)
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        일일/주간 퀘스트</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ stats.daily_quests }} / {{ stats.weekly_quests }}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 결과 알림 -->
+            {% if batch_result %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>작업 완료!</strong> {{ batch_result.operation }} 작업이 성공적으로 완료되었습니다.
+                {% if batch_result.affected_users is defined %}
+                <p>영향을 받은 사용자 수: {{ batch_result.affected_users }}</p>
+                {% endif %}
+                {% if batch_result.affected_stocks is defined %}
+                <p>영향을 받은 주식 수: {{ batch_result.affected_stocks }}</p>
+                {% endif %}
+                {% if batch_result.affected_records is defined %}
+                <p>영향을 받은 레코드 수: {{ batch_result.affected_records }}</p>
+                {% endif %}
+                {% if batch_result.amount is defined %}
+                <p>지급된 금액: {{ batch_result.amount }} {{ system_config.get('currency_name', 'CM') }}</p>
+                {% endif %}
+                {% if batch_result.points is defined %}
+                <p>지급된 포인트: {{ batch_result.points }}</p>
+                {% endif %}
+                {% if batch_result.duration is defined %}
+                <p>작업 소요 시간: {{ batch_result.duration }}초</p>
+                {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">일괄 작업 메뉴</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="batchTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="user-tab" data-bs-toggle="tab" data-bs-target="#user-operations" type="button" role="tab" aria-controls="user-operations" aria-selected="true">사용자 관련</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-operations" type="button" role="tab" aria-controls="system-operations" aria-selected="false">시스템 관련</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="log-tab" data-bs-toggle="tab" data-bs-target="#log-operations" type="button" role="tab" aria-controls="log-operations" aria-selected="false">로그 관리</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-operations" type="button" role="tab" aria-controls="backup-operations" aria-selected="false">백업 관리</button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="batchTabsContent">
+                                <!-- 사용자 관련 일괄 작업 -->
+                                <div class="tab-pane fade show active" id="user-operations" role="tabpanel" aria-labelledby="user-tab">
+                                    <div class="row mt-4">
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">전체 사용자 보너스 지급</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="add_bonus_all">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="bonus_amount" class="form-label">보너스 금액</label>
+                                                            <input type="number" class="form-control" id="bonus_amount" name="bonus_amount" min="1" required>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="bonus_description" class="form-label">설명</label>
+                                                            <input type="text" class="form-control" id="bonus_description" name="bonus_description" value="관리자 보너스" required>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="exclude_admins" name="exclude_admins" checked>
+                                                            <label class="form-check-label" for="exclude_admins">관리자 제외</label>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-primary">보너스 지급</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">전체 사용자 포인트 지급</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="add_points_all">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="points_amount" class="form-label">포인트 금액</label>
+                                                            <input type="number" class="form-control" id="points_amount" name="points_amount" min="1" required>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="points_reason" class="form-label">이유</label>
+                                                            <input type="text" class="form-control" id="points_reason" name="points_reason" value="관리자 포인트 부여" required>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="exclude_admins_points" name="exclude_admins" checked>
+                                                            <label class="form-check-label" for="exclude_admins_points">관리자 제외</label>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-primary">포인트 지급</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">일일 보너스 초기화</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>모든 사용자의 일일 보너스 상태를 초기화합니다. 사용자들은 다시 일일 보너스를 받을 수 있게 됩니다.</p>
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="reset_daily_bonuses">
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 모든 사용자의 일일 보너스를 초기화하시겠습니까?');">일일 보너스 초기화</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">게임 제한 초기화</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>모든 사용자의 게임 플레이 제한을 초기화합니다. 사용자들은 다시 모든 게임을 플레이할 수 있게 됩니다.</p>
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="reset_game_limits">
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 모든 사용자의 게임 제한을 초기화하시겠습니까?');">게임 제한 초기화</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 시스템 관련 일괄 작업 -->
+                                <div class="tab-pane fade" id="system-operations" role="tabpanel" aria-labelledby="system-tab">
+                                    <div class="row mt-4">
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">주식 가격 초기화</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>모든 주식의 가격을 초기 설정값으로 초기화합니다.</p>
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="reset_stock_prices">
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 모든 주식의 가격을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">주식 가격 초기화</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">업적 초기화</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="reset_achievements">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="achievement_code" class="form-label">업적 코드 (비워두면 모든 업적 초기화)</label>
+                                                            <select class="form-control" id="achievement_code" name="achievement_code">
+                                                                <option value="">모든 업적</option>
+                                                                {% for achievement in achievements %}
+                                                                <option value="{{ achievement.code }}">{{ achievement.name }} ({{ achievement.code }})</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 업적을 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">업적 초기화</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">퀘스트 초기화</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="reset_quests">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="quest_type" class="form-label">퀘스트 유형</label>
+                                                            <select class="form-control" id="quest_type" name="quest_type">
+                                                                <option value="all">모든 퀘스트</option>
+                                                                <option value="daily">일일 퀘스트</option>
+                                                                <option value="weekly">주간 퀘스트</option>
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 퀘스트를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">퀘스트 초기화</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 로그 관련 일괄 작업 -->
+                                <div class="tab-pane fade" id="log-operations" role="tabpanel" aria-labelledby="log-tab">
+                                    <div class="row mt-4">
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">오래된 로그 정리</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="cleanup_old_logs">
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="days" class="form-label">일수 (이전 로그 삭제)</label>
+                                                            <input type="number" class="form-control" id="days" name="days" value="30" min="1" required>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="log_type" class="form-label">로그 유형</label>
+                                                            <select class="form-control" id="log_type" name="log_type">
+                                                                <option value="all">모든 로그</option>
+                                                                <option value="login">로그인 로그</option>
+                                                                <option value="game">게임 로그</option>
+                                                                <option value="market">마켓 로그</option>
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        <button type="submit" class="btn btn-warning" onclick="return confirm('정말로 오래된 로그를 정리하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">오래된 로그 정리</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 백업 관리 -->
+                                <div class="tab-pane fade" id="backup-operations" role="tabpanel" aria-labelledby="backup-tab">
+                                    <div class="row mt-4">
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">데이터 백업</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>현재 시스템의 모든 데이터를 백업합니다.</p>
+                                                    <form method="post">
+                                                        <input type="hidden" name="operation" value="backup_data">
+                                                        <button type="submit" class="btn btn-primary">데이터 백업</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card shadow mb-4">
+                                                <div class="card-header py-3">
+                                                    <h6 class="m-0 font-weight-bold text-primary">최근 백업 목록</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    {% if backups %}
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>백업 시간</th>
+                                                                    <th>파일 수</th>
+                                                                    <th>크기</th>
+                                                                    <th>관리자</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for backup in backups %}
+                                                                <tr>
+                                                                    <td>{{ backup.timestamp }}</td>
+                                                                    <td>{{ backup.files.split(',')|length }}</td>
+                                                                    <td>{{ (backup.size|int / 1024)|round(2) }} KB</td>
+                                                                    <td>{{ backup.admin_id }}</td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    {% else %}
+                                                    <p>백업 정보가 없습니다.</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- 작업 이력 모달 -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="historyModalLabel">일괄 작업 이력</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>작업 시간</th>
+                                <th>작업 유형</th>
+                                <th>영향 받은 항목</th>
+                                <th>소요 시간</th>
+                                <th>관리자</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in batch_logs %}
+                            <tr>
+                                <td>{{ log.timestamp }}</td>
+                                <td>{{ log.operation }}</td>
+                                <td>{{ log.affected_count }}</td>
+                                <td>{{ log.duration }}초</td>
+                                <td>{{ log.admin_id }}</td>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if log.status == 'success' else 'bg-danger' }}">
+                                        {{ log.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 탭 상태 유지
+    document.addEventListener('DOMContentLoaded', function() {
+        // URL에서 탭 정보 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        
+        if (tabParam) {
+            // 탭 활성화
+            const tab = document.querySelector(`#${tabParam}-tab`);
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }
+        
+        // 탭 변경 시 URL 업데이트
+        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                const targetId = event.target.id.replace('-tab', '');
+                const url = new URL(window.location);
+                url.searchParams.set('tab', targetId);
+                window.history.replaceState({}, '', url);
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="games-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h2 class="mb-0"><i class="fas fa-gamepad me-2"></i>체스제국 게임센터</h2>
+        </div>
+        <div class="card-body">
+            <div class="balance-display mb-3 p-3 bg-light rounded">
+                <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold">{{ g.user.balance }}{{ currency_name }}</span></h5>
+            </div>
+            
+            <div class="row g-4">
+                {% for game in games %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 game-card">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">{{ game.name }}</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-center align-items-center mb-3">
+                                {% if game.id == 'running' %}
+                                <i class="fas fa-running fa-4x text-primary"></i>
+                                {% elif game.id == 'cards' %}
+                                <i class="fas fa-id-card fa-4x text-success"></i>
+                                {% elif game.id == 'casino' %}
+                                <i class="fas fa-dice fa-4x text-danger"></i>
+                                {% elif game.id == 'tictactoe' %}
+                                <i class="fas fa-th fa-4x text-warning"></i>
+                                {% elif game.id == 'rps' %}
+                                <i class="fas fa-hand-rock fa-4x text-info"></i>
+                                {% elif game.id == 'snake' %}
+                                <i class="fas fa-dragon fa-4x text-dark"></i>
+                                {% elif game.id == 'betting' %}
+                                <i class="fas fa-money-bill-wave fa-4x text-success"></i>
+                                {% elif game.id == 'slot' %}
+                                <i class="fas fa-slot-machine fa-4x text-danger"></i>
+                                {% elif game.id == 'dice' %}
+                                <i class="fas fa-dice-five fa-4x text-primary"></i>
+                                {% elif game.id == 'blackjack' %}
+                                <i class="fas fa-crown fa-4x text-warning"></i>
+                                {% elif game.id == 'bingo' %}
+                                <i class="fas fa-th-large fa-4x text-info"></i>
+                                {% elif game.id == 'horse_racing' %}
+                                <i class="fas fa-horse fa-4x text-dark"></i>
+                                {% elif game.id == 'lottery' %}
+                                <i class="fas fa-ticket-alt fa-4x text-success"></i>
+                                {% elif game.id == 'lottery_scratch' %}
+                                <i class="fas fa-receipt fa-4x text-warning"></i>
+                                {% elif game.id == 'fishing' %}
+                                <i class="fas fa-fish fa-4x text-info"></i>
+                                {% elif game.id == 'treasure_hunt' %}
+                                <i class="fas fa-gem fa-4x text-danger"></i>
+                                {% else %}
+                                <i class="fas fa-gamepad fa-4x text-secondary"></i>
+                                {% endif %}
+                            </div>
+                            <p class="card-text">{{ game.description }}</p>
+                            <p class="card-text"><strong>최소 배팅:</strong> {{ game.min_bet }}{{ currency_name }}</p>
+                            <p class="card-text"><strong>최대 배팅:</strong> {{ game.max_bet }}{{ currency_name }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('games.game_page', game_id=game.id) }}" class="btn btn-primary w-100">
+                                <i class="fas fa-play me-2"></i>게임 시작
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-trophy me-2"></i>게임 리더보드</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="leaderboard">
+                            <thead>
+                                <tr>
+                                    <th>순위</th>
+                                    <th>사용자</th>
+                                    <th>게임</th>
+                                    <th>최고 점수</th>
+                                    <th>획득 상금</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 리더보드는 자바스크립트로 동적 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/games.js') }}"></script>
+{% endblock %}

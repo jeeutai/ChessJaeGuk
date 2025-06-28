@@ -1,0 +1,321 @@
+{% extends 'admin.html' %}
+
+{% block title %}포인트 시스템 관리 - 관리자 페이지{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">포인트 시스템 관리</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPointRuleModal">
+                        <i class="fas fa-plus me-2"></i>새 포인트 규칙 추가
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>액션 코드</th>
+                                    <th>이름</th>
+                                    <th>설명</th>
+                                    <th>기본 포인트</th>
+                                    <th>쿨다운(분)</th>
+                                    <th>일일 제한</th>
+                                    <th>상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for point in points %}
+                                <tr>
+                                    <td><code>{{ point.action_code }}</code></td>
+                                    <td>{{ point.name }}</td>
+                                    <td>{{ point.description }}</td>
+                                    <td>{{ point.base_points }}</td>
+                                    <td>{{ point.cooldown_minutes }}</td>
+                                    <td>{{ point.daily_limit }}</td>
+                                    <td>
+                                        {% if point.enabled == 'True' %}
+                                        <span class="badge bg-success">활성화</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">비활성화</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info edit-point-rule" 
+                                                data-action-code="{{ point.action_code }}"
+                                                data-name="{{ point.name }}"
+                                                data-description="{{ point.description }}"
+                                                data-base-points="{{ point.base_points }}"
+                                                data-cooldown-minutes="{{ point.cooldown_minutes }}"
+                                                data-daily-limit="{{ point.daily_limit }}"
+                                                data-enabled="{{ point.enabled }}"
+                                                data-bs-toggle="modal" data-bs-target="#editPointRuleModal">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger delete-point-rule" 
+                                                data-action-code="{{ point.action_code }}"
+                                                data-name="{{ point.name }}"
+                                                data-bs-toggle="modal" data-bs-target="#deletePointRuleModal">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">포인트 규칙 가이드</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">포인트 시스템 개요</h6>
+                        <p>사용자가 다양한 활동을 통해 포인트를 획득하고 보상을 받을 수 있는 시스템입니다.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>주요 필드 설명:</h6>
+                        <ul>
+                            <li><strong>액션 코드</strong>: 포인트 획득 액션의 고유 코드 (예: login_daily, market_purchase)</li>
+                            <li><strong>기본 포인트</strong>: 해당 활동 시 획득하는 기본 포인트</li>
+                            <li><strong>쿨다운</strong>: 동일 활동의 포인트 획득 간격 (분)</li>
+                            <li><strong>일일 제한</strong>: 하루에 해당 활동으로 포인트를 획득할 수 있는 최대 횟수</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">포인트 획득 통계</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pointsChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 새 포인트 규칙 추가 모달 -->
+<div class="modal fade" id="addPointRuleModal" tabindex="-1" aria-labelledby="addPointRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPointRuleModalLabel">새 포인트 규칙 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_points') }}">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="action_code" class="form-label">액션 코드 *</label>
+                            <input type="text" class="form-control" id="action_code" name="action_code" required 
+                                   placeholder="login_daily, market_purchase 등">
+                            <div class="form-text">활동을 식별하는 고유 코드입니다.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="일일 로그인, 마켓 구매 등">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" 
+                                  placeholder="이 포인트 규칙에 대한 상세 설명"></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="base_points" class="form-label">기본 포인트 *</label>
+                            <input type="number" class="form-control" id="base_points" name="base_points" required min="1" value="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cooldown_minutes" class="form-label">쿨다운(분) *</label>
+                            <input type="number" class="form-control" id="cooldown_minutes" name="cooldown_minutes" required min="0" value="60">
+                            <div class="form-text">0은 쿨다운 없음을 의미합니다.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="daily_limit" class="form-label">일일 제한 *</label>
+                            <input type="number" class="form-control" id="daily_limit" name="daily_limit" required min="0" value="5">
+                            <div class="form-text">0은 제한 없음을 의미합니다.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enabled" name="enabled" checked>
+                        <label class="form-check-label" for="enabled">활성화</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="add_point_rule" class="btn btn-primary">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 포인트 규칙 수정 모달 -->
+<div class="modal fade" id="editPointRuleModal" tabindex="-1" aria-labelledby="editPointRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPointRuleModalLabel">포인트 규칙 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_points') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_action_code" name="action_code">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_name" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_base_points" class="form-label">기본 포인트 *</label>
+                            <input type="number" class="form-control" id="edit_base_points" name="base_points" required min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">설명</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_cooldown_minutes" class="form-label">쿨다운(분) *</label>
+                            <input type="number" class="form-control" id="edit_cooldown_minutes" name="cooldown_minutes" required min="0">
+                            <div class="form-text">0은 쿨다운 없음을 의미합니다.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_daily_limit" class="form-label">일일 제한 *</label>
+                            <input type="number" class="form-control" id="edit_daily_limit" name="daily_limit" required min="0">
+                            <div class="form-text">0은 제한 없음을 의미합니다.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="edit_enabled" name="enabled">
+                        <label class="form-check-label" for="edit_enabled">활성화</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="edit_point_rule" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 포인트 규칙 삭제 모달 -->
+<div class="modal fade" id="deletePointRuleModal" tabindex="-1" aria-labelledby="deletePointRuleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePointRuleModalLabel">포인트 규칙 삭제</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_points') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="delete_action_code" name="action_code">
+                    <p>정말로 <strong id="delete_point_name"></strong> 포인트 규칙을 삭제하시겠습니까?</p>
+                    <div class="alert alert-warning">
+                        이 작업은 되돌릴 수 없습니다. 삭제하면 이 포인트 규칙으로 더 이상 포인트를 획득할 수 없게 됩니다.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="delete_point_rule" class="btn btn-danger">삭제</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 포인트 규칙 수정 모달 데이터 설정
+    const editButtons = document.querySelectorAll('.edit-point-rule');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('edit_action_code').value = this.dataset.actionCode;
+            document.getElementById('edit_name').value = this.dataset.name;
+            document.getElementById('edit_description').value = this.dataset.description;
+            document.getElementById('edit_base_points').value = this.dataset.basePoints;
+            document.getElementById('edit_cooldown_minutes').value = this.dataset.cooldownMinutes;
+            document.getElementById('edit_daily_limit').value = this.dataset.dailyLimit;
+            document.getElementById('edit_enabled').checked = this.dataset.enabled === 'True';
+        });
+    });
+    
+    // 포인트 규칙 삭제 모달 데이터 설정
+    const deleteButtons = document.querySelectorAll('.delete-point-rule');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('delete_action_code').value = this.dataset.actionCode;
+            document.getElementById('delete_point_name').textContent = this.dataset.name;
+        });
+    });
+    
+    // 포인트 획득 통계 차트
+    const ctx = document.getElementById('pointsChart').getContext('2d');
+    const pointsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['로그인', '송금', '마켓 구매', '게임 플레이', '주식 거래', '친구 추가', '채팅'],
+            datasets: [{
+                label: '일일 평균 획득 포인트',
+                data: [100, 150, 80, 200, 120, 50, 30],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)',
+                    'rgba(201, 203, 207, 0.2)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 206, 86)',
+                    'rgb(75, 192, 192)',
+                    'rgb(153, 102, 255)',
+                    'rgb(255, 159, 64)',
+                    'rgb(201, 203, 207)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

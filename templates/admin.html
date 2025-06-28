@@ -1,0 +1,2019 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="row g-3">
+        <!-- 사이드바 내비게이션 -->
+        <div class="col-md-3">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0"><i class="fas fa-cogs me-2"></i>관리자 패널</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="systemChart" width="400" height="200"></canvas>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.index') }}" class="list-group-item list-group-item-action {% if section == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt me-2"></i>대시보드
+                    </a>
+
+                    <!-- 사용자 및 로그 관리 -->
+                    <div class="list-group-item list-group-item-action bg-light fw-bold">
+                        <i class="fas fa-database me-2"></i>데이터 관리
+                    </div>
+                    <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action {% if section == 'users' %}active{% endif %}">
+                        <i class="fas fa-users me-2"></i>사용자 관리
+                    </a>
+                    <a href="{{ url_for('admin.transactions') }}" class="list-group-item list-group-item-action {% if section == 'transactions' %}active{% endif %}">
+                        <i class="fas fa-exchange-alt me-2"></i>거래 내역
+                    </a>
+                    <a href="{{ url_for('admin.notices') }}" class="list-group-item list-group-item-action {% if section == 'notices' %}active{% endif %}">
+                        <i class="fas fa-bullhorn me-2"></i>공지사항 관리
+                    </a>
+
+                    <!-- 로그 관리 -->
+                    <div class="list-group-item list-group-item-action bg-light fw-bold">
+                        <i class="fas fa-clipboard-list me-2"></i>로그 관리
+                    </div>
+                    <a href="{{ url_for('admin.login_logs') }}" class="list-group-item list-group-item-action {% if section == 'login_logs' %}active{% endif %}">
+                        <i class="fas fa-sign-in-alt me-2"></i>로그인 로그
+                    </a>
+                    <a href="{{ url_for('admin.game_logs') }}" class="list-group-item list-group-item-action {% if section == 'game_logs' %}active{% endif %}">
+                        <i class="fas fa-gamepad me-2"></i>게임 로그
+                    </a>
+                    <a href="{{ url_for('admin.market_logs') }}" class="list-group-item list-group-item-action {% if section == 'market_logs' %}active{% endif %}">
+                        <i class="fas fa-shopping-cart me-2"></i>마트 로그
+                    </a>
+
+                    <!-- 콘텐츠 관리 -->
+                    <div class="list-group-item list-group-item-action bg-light fw-bold">
+                        <i class="fas fa-cogs me-2"></i>콘텐츠 관리
+                    </div>
+                    <a href="{{ url_for('admin.items') }}" class="list-group-item list-group-item-action {% if section == 'items' %}active{% endif %}">
+                        <i class="fas fa-gift me-2"></i>아이템 관리
+                    </a>
+                    <a href="{{ url_for('admin.stocks') }}" class="list-group-item list-group-item-action {% if section == 'stocks' %}active{% endif %}">
+                        <i class="fas fa-chart-line me-2"></i>주식 관리
+                    </a>
+
+                    <!-- 설정 관리 -->
+                    <div class="list-group-item list-group-item-action bg-light fw-bold">
+                        <i class="fas fa-wrench me-2"></i>시스템 설정
+                    </div>
+                    <a href="{{ url_for('admin.system') }}" class="list-group-item list-group-item-action {% if section == 'system' %}active{% endif %}">
+                        <i class="fas fa-server me-2"></i>시스템 상태
+                    </a>
+                    <a href="{{ url_for('admin.config_system') }}" class="list-group-item list-group-item-action {% if section == 'config_system' %}active{% endif %}">
+                        <i class="fas fa-sliders-h me-2"></i>기본 설정
+                    </a>
+                    <a href="{{ url_for('admin.config_games') }}" class="list-group-item list-group-item-action {% if section == 'config_games' %}active{% endif %}">
+                        <i class="fas fa-dice me-2"></i>게임 설정
+                    </a>
+                    <a href="{{ url_for('admin.config_stocks') }}" class="list-group-item list-group-item-action {% if section == 'config_stocks' %}active{% endif %}">
+                        <i class="fas fa-chart-pie me-2"></i>주식 설정
+                    </a>
+                    <a href="{{ url_for('admin.config_politicians') }}" class="list-group-item list-group-item-action {% if section == 'config_politicians' %}active{% endif %}">
+                        <i class="fas fa-user-tie me-2"></i>정치인 설정
+                    </a>
+                    <a href="{{ url_for('admin.config_market') }}" class="list-group-item list-group-item-action {% if section == 'config_market' %}active{% endif %}">
+                        <i class="fas fa-store-alt me-2"></i>마켓 설정
+                    </a>
+                    <a href="{{ url_for('admin.simple_csv_editor') }}" class="list-group-item list-group-item-action {% if section == 'csv_editor' %}active{% endif %}">
+                        <i class="fas fa-table me-2"></i>CSV 편집기
+                    </a>
+
+                    <!-- 고급 기능 -->
+                    <div class="list-group-item list-group-item-action bg-light fw-bold">
+                        <i class="fas fa-tools me-2"></i>고급 기능
+                    </div>
+                    <a href="{{ url_for('admin.send_money') }}" class="list-group-item list-group-item-action {% if section == 'send_money' %}active{% endif %}">
+                        <i class="fas fa-money-bill-wave me-2"></i>송금 관리
+                    </a>
+                    <a href="{{ url_for('admin.backup_data') }}" class="list-group-item list-group-item-action {% if section == 'backup_data' %}active{% endif %}">
+                        <i class="fas fa-cloud-download-alt me-2"></i>데이터 백업
+                    </a>
+                    <a href="{{ url_for('admin.restore_data') }}" class="list-group-item list-group-item-action {% if section == 'restore_data' %}active{% endif %}">
+                        <i class="fas fa-cloud-upload-alt me-2"></i>데이터 복원
+                    </a>
+                    <a href="{{ url_for('admin.api_settings') }}" class="list-group-item list-group-item-action {% if section == 'api_settings' %}active{% endif %}">
+                        <i class="fas fa-key me-2"></i>API 설정
+                    </a>
+                    <a href="{{ url_for('admin.system_logs') }}" class="list-group-item list-group-item-action {% if section == 'system_logs' %}active{% endif %}">
+                        <i class="fas fa-terminal me-2"></i>시스템 로그
+                    </a>
+                    <a href="{{ url_for('admin.security_settings') }}" class="list-group-item list-group-item-action {% if section == 'security_settings' %}active{% endif %}">
+                        <i class="fas fa-shield-alt me-2"></i>보안 설정
+                    </a>
+                    <a href="{{ url_for('admin.batch_operations') }}" class="list-group-item list-group-item-action {% if section == 'batch_operations' %}active{% endif %}">
+                        <i class="fas fa-tasks me-2"></i>일괄 작업
+                    </a>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-sm w-100">
+                        <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 영역 -->
+        <div class="col-md-9">
+            {% if section == 'dashboard' %}
+            <!-- 대시보드 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>관리자 대시보드</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- 데이터 관리 섹션 -->
+                        <div class="col-12">
+                            <h4 class="border-bottom pb-2"><i class="fas fa-database me-2"></i>데이터 관리</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-users fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">사용자 관리</h5>
+                                        <p class="card-text">{{ dashboard.data_count.users }}명 사용자</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-light">바로가기</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-money-bill-wave fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">거래 내역</h5>
+                                        <p class="card-text">{{ dashboard.data_count.transactions }}건 거래</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.transactions') }}" class="btn btn-sm btn-light">바로가기</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-bullhorn fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">공지사항</h5>
+                                        <p class="card-text">공지 등록/관리</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.notices') }}" class="btn btn-sm btn-dark">바로가기</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 콘텐츠 관리 섹션 -->
+                        <div class="col-12 mt-4">
+                            <h4 class="border-bottom pb-2"><i class="fas fa-cogs me-2"></i>콘텐츠 관리</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-gamepad fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">게임 로그</h5>
+                                        <p class="card-text">{{ dashboard.data_count.game_logs }}건 기록</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0 d-flex justify-content-between">
+                                    <a href="{{ url_for('admin.game_logs') }}" class="btn btn-sm btn-light">로그</a>
+                                    <a href="{{ url_for('admin.config_games') }}" class="btn btn-sm btn-light">설정</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-store fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">마트 관리</h5>
+                                        <p class="card-text">{{ dashboard.data_count.market_logs }}건 구매</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0 d-flex justify-content-between">
+                                    <a href="{{ url_for('admin.items') }}" class="btn btn-sm btn-light">아이템</a>
+                                    <a href="{{ url_for('admin.config_market') }}" class="btn btn-sm btn-light">설정</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-chart-line fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">주식 관리</h5>
+                                        <p class="card-text">주식 가격/거래 관리</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0 d-flex justify-content-between">
+                                    <a href="{{ url_for('admin.stocks') }}" class="btn btn-sm btn-light">주식</a>
+                                    <a href="{{ url_for('admin.config_stocks') }}" class="btn btn-sm btn-light">설정</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 설정 관리 섹션 -->
+                        <div class="col-12 mt-4">
+                            <h4 class="border-bottom pb-2"><i class="fas fa-wrench me-2"></i>시스템 설정</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-sliders-h fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">기본 설정</h5>
+                                        <p class="card-text">{{ dashboard.config_count.system }}개 설정</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.config_system') }}" class="btn btn-sm btn-light">관리</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-user-tie fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">정치인 설정</h5>
+                                        <p class="card-text">{{ dashboard.config_count.politicians }}명 등록</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.config_politicians') }}" class="btn btn-sm btn-light">관리</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-dark text-white">
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="fas fa-server fa-3x me-3"></i>
+                                    <div>
+                                        <h5 class="card-title mb-0">시스템 상태</h5>
+                                        <p class="card-text">시스템 로그/성능</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent border-0">
+                                    <a href="{{ url_for('admin.system') }}" class="btn btn-sm btn-light">바로가기</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 통계 차트 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>시스템 통계</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:300px;">
+                        <canvas id="statsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'users' %}
+            <!-- 사용자 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="fas fa-users me-2"></i>사용자 관리</h3>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#logoutAllModal">
+                            <i class="fas fa-sign-out-alt me-1"></i> 전체 로그아웃
+                        </button>
+                        <button type="button" class="btn btn-info btn-sm" id="exportUserData">
+                            <i class="fas fa-download me-1"></i> 데이터 내보내기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 전체 로그아웃 모달 -->
+                <div class="modal fade" id="logoutAllModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">전체 사용자 로그아웃</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>주의!</strong> 이 작업은 모든 일반 사용자를 강제로 로그아웃시킵니다.
+                                </div>
+                                <p>관리자를 제외한 모든 사용자가 로그아웃됩니다. 계속하시겠습니까?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                <form action="{{ url_for('admin.logout_all_users') }}" method="post">
+                                    <button type="submit" class="btn btn-warning">전체 로그아웃</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    <div class="search-container">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="userSearch" placeholder="사용자 검색...">
+                            <button class="btn btn-light" type="button" id="searchBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>닉네임</th>
+                                    <th>이메일</th>
+                                    <th>전화번호</th>
+                                    <th>잔액</th>
+                                    <th>관리자</th>
+                                    <th>가입일</th>
+                                    <th>메모</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.nickname }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.phone }}</td>
+                                    <td>{{ user.balance }} {{ system_config.get('currency_symbol', 'CM') }}</td>
+                                    <td>
+                                        {% if user.is_admin == 'True' %}
+                                        <span class="badge bg-danger">관리자</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">일반</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.created_at.split()[0] }}</td>
+                                    <td>
+                                        <form action="{{ url_for('admin.update_memo', user_id=user.id) }}" method="post" class="d-inline">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" name="memo" value="{{ user.memo }}" placeholder="메모">
+                                                <button type="submit" class="btn btn-outline-primary">
+                                                    <i class="fas fa-save"></i>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-primary" title="사용자 정보 수정">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if user.id != 'admin' and user.id != g.user.id %}
+                                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}" title="사용자 삭제">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sendMoneyModal{{ user.id }}" title="송금하기">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                            </button>
+                                            {% if user.id != 'admin' %}
+                                            <form action="{{ url_for('admin.logout_user', user_id=user.id) }}" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-warning" title="강제 로그아웃" onclick="return confirm('이 사용자를 로그아웃 시키겠습니까?')">
+                                                    <i class="fas fa-sign-out-alt"></i>
+                                                </button>
+                                            </form>
+                                            {% if user.status == 'banned' %}
+                                            <form action="{{ url_for('admin.unban_user', user_id=user.id) }}" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-info" title="계정 정지 해제">
+                                                    <i class="fas fa-unlock"></i>
+                                                </button>
+                                            </form>
+                                            {% else %}
+                                            <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#banModal{{ user.id }}" title="계정 정지">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- 계정 정지 모달 -->
+                                        <div class="modal fade" id="banModal{{ user.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-dark text-white">
+                                                        <h5 class="modal-title">계정 정지 - {{ user.nickname }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form action="{{ url_for('admin.ban_user', user_id=user.id) }}" method="post">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="ban_reason" class="form-label">정지 사유</label>
+                                                                <textarea class="form-control" id="ban_reason" name="ban_reason" rows="3" required></textarea>
+                                                            </div>
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                이 작업은 사용자를 즉시 로그아웃시키고 계정을 정지합니다.
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                            <button type="submit" class="btn btn-danger">계정 정지</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 삭제 모달 -->
+                                        <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title">사용자 삭제 확인</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>사용자 <strong>{{ user.id }} ({{ user.nickname }})</strong>을(를) 삭제하시겠습니까?</p>
+                                                        <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                        <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger">삭제</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 송금 모달 -->
+                                        <div class="modal fade" id="sendMoneyModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-success text-white">
+                                                        <h5 class="modal-title">송금 - {{ user.nickname }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form action="{{ url_for('admin.send_money') }}" method="post">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="receiver_id" class="form-label">수신자 ID</label>
+                                                                <input type="text" class="form-control" id="receiver_id" name="receiver_id" value="{{ user.id }}" readonly>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label for="amount" class="form-label">금액</label>
+                                                                <input type="number" class="form-control" id="amount" name="amount" min="1" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                            <button type="submit" class="btn btn-success">송금</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'edit_user' %}
+            <!-- 사용자 편집 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-edit me-2"></i>사용자 정보 수정</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.edit_user', user_id=user.id) }}" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id" class="form-label">아이디</label>
+                                    <input type="text" class="form-control" id="id" value="{{ user.id }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="nickname" class="form-label">닉네임</label>
+                                    <input type="text" class="form-control" id="nickname" name="nickname" value="{{ user.nickname }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">이메일</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">전화번호</label>
+                                    <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="balance" class="form-label">잔액</label>
+                                    <input type="number" class="form-control" id="balance" name="balance" value="{{ user.balance }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="is_admin" class="form-label">관리자 권한</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" {% if user.is_admin == 'True' %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_admin">관리자 권한 부여</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="created_at" class="form-label">가입일</label>
+                                    <input type="text" class="form-control" id="created_at" value="{{ user.created_at }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">정보 수정</button>
+                                <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">취소</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'transactions' %}
+            <!-- 거래 내역 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>거래 내역</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>거래 ID</th>
+                                    <th>보낸 사람</th>
+                                    <th>받는 사람</th>
+                                    <th>금액</th>
+                                    <th>유형</th>
+                                    <th>일시</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in transactions %}
+                                <tr>
+                                    <td>{{ tx.id }}</td>
+                                    <td>{{ tx.sender_id }}</td>
+                                    <td>{{ tx.receiver_id }}</td>
+                                    <td>{{ tx.amount }}원</td>
+                                    <td>
+                                        {% if 'transfer' in tx.type %}
+                                        <span class="badge bg-primary">송금</span>
+                                        {% elif 'admin_transfer' in tx.type %}
+                                        <span class="badge bg-danger">관리자 송금</span>
+                                        {% elif 'market_purchase' in tx.type %}
+                                        <span class="badge bg-info">마트 구매</span>
+                                        {% elif 'game_win' in tx.type %}
+                                        <span class="badge bg-success">게임 승리</span>
+                                        {% elif 'game_loss' in tx.type %}
+                                        <span class="badge bg-warning">게임 패배</span>
+                                        {% elif 'item_effect' in tx.type %}
+                                        <span class="badge bg-secondary">아이템 효과</span>
+                                        {% elif 'stock_buy' in tx.type %}
+                                        <span class="badge bg-dark">주식 구매</span>
+                                        {% elif 'stock_sell' in tx.type %}
+                                        <span class="badge bg-light text-dark">주식 판매</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ tx.type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ tx.timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'login_logs' %}
+            <!-- 로그인 로그 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>로그인 로그</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>로그 ID</th>
+                                    <th>사용자 ID</th>
+                                    <th>IP 주소</th>
+                                    <th>상태</th>
+                                    <th>일시</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.id }}</td>
+                                    <td>{{ log.user_id }}</td>
+                                    <td>{{ log.ip }}</td>
+                                    <td>
+                                        {% if log.status == 'success' %}
+                                        <span class="badge bg-success">로그인 성공</span>
+                                        {% elif log.status == 'failed' %}
+                                        <span class="badge bg-danger">로그인 실패</span>
+                                        {% elif log.status == 'logout' %}
+                                        <span class="badge bg-secondary">로그아웃</span>
+                                        {% else %}
+                                        <span class="badge bg-primary">{{ log.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'game_logs' %}
+            <!-- 게임 로그 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-gamepad me-2"></i>게임 로그</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>로그 ID</th>
+                                    <th>사용자 ID</th>
+                                    <th>게임 유형</th>
+                                    <th>베팅 금액</th>
+                                    <th>결과</th>
+                                    <th>일시</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.id }}</td>
+                                    <td>{{ log.user_id }}</td>
+                                    <td>
+                                        {% if log.game_type == 'running' %}
+                                        <span class="badge bg-primary">러닝 게임</span>
+                                        {% elif log.game_type == 'cards' %}
+                                        <span class="badge bg-success">카드 게임</span>
+                                        {% elif log.game_type == 'casino' %}
+                                        <span class="badge bg-danger">카지노 게임</span>
+                                        {% elif log.game_type == 'tictactoe' %}
+                                        <span class="badge bg-warning">틱택토</span>
+                                        {% elif log.game_type == 'rps' %}
+                                        <span class="badge bg-info">가위바위보</span>
+                                        {% elif log.game_type == 'snake' %}
+                                        <span class="badge bg-dark">스네이크</span>
+                                        {% elif log.game_type == 'betting' %}
+                                        <span class<span class="badge bg-secondary">배팅 게임</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">{{ log.game_type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.bet_amount }}원</td>
+                                    <td>
+                                        {% if 'win' in log.result %}
+                                        <span class="badge bg-success">승리</span>
+                                        {% elif 'lose' in log.result %}
+                                        <span class="badge bg-danger">패배</span>
+                                        {% elif 'draw' in log.result %}
+                                        <span class="badge bg-secondary">무승부</span>
+                                        {% else %}
+                                        <span class="badge bg-info">{{ log.result }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'market_logs' %}
+            <!-- 마트 로그 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>마트 로그</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>로그 ID</th>
+                                    <th>사용자 ID</th>
+                                    <th>아이템 ID</th>
+                                    <th>수량</th>
+                                    <th>가격</th>
+                                    <th>일시</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.id }}</td>
+                                    <td>{{ log.user_id }}</td>
+                                    <td>{{ log.item_id }}</td>
+                                    <td>{{ log.quantity }}</td>
+                                    <td>{{ log.price }}원</td>
+                                    <td>{{ log.timestamp }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'notices' %}
+            <!-- 공지사항 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0"><i class="fas fa-bullhorn me-2"></i>공지사항 관리</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.notices') }}" method="post" class="mb-4">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">제목</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">내용</label>
+                            <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">공지사항 등록</button>
+                    </form>
+
+                    <h4 class="mt-4 mb-3">공지사항 목록</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>제목</th>
+                                    <th>내용</th>
+                                    <th>작성자</th>
+                                    <th>작성일</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notice in notices %}
+                                <tr>
+                                    <td>{{ notice.id }}</td>
+                                    <td>{{ notice.title }}</td>
+                                    <td>{{ notice.content }}</td>
+                                    <td>{{ notice.author_id }}</td>
+                                    <td>{{ notice.timestamp }}</td>
+                                    <td>
+                                        <form action="{{ url_for('admin.delete_notice', notice_id=notice.id) }}" method="post">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> 삭제
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'items' %}
+            <!-- 아이템 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-gift me-2"></i>아이템 관리</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.items') }}" method="post" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">아이템 이름</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">가격</label>
+                                    <input type="number" class="form-control" id="price" name="price" required>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="effect" class="form-label">효과</label>
+                                    <input type="text" class="form-control" id="effect" name="effect" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="duration" class="form-label">지속 시간(사용 횟수)</label>
+                                    <input type="number" class="form-control" id="duration" name="duration" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_uses" class="form-label">최대 사용 횟수</label>
+                                    <input type="number" class="form-control" id="max_uses" name="max_uses" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">아이템 추가</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <h4 class="mt-4 mb-3">아이템 목록</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이름</th>
+                                    <th>효과</th>
+                                    <th>가격</th>
+                                    <th>지속시간</th>
+                                    <th>최대사용</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.id }}</td>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.effect }}</td>
+                                    <td>{{ item.price }}원</td>
+                                    <td>{{ item.duration }}</td>
+                                    <td>{{ item.max_uses }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin.edit_item', item_id=item.id) }}" class="btn btn-primary" aria-label="Edit item">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form action="{{ url_for('admin.delete_item', item_id=item.id) }}" method="post">
+                                                <button type="submit" class="btn btn-danger" aria-label="Delete item">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'edit_item' %}
+            <!-- 아이템 편집 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-edit me-2"></i>아이템 수정</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.edit_item', item_id=item.id) }}" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">아이템 이름</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ item.name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="price" class="form-label">가격</label>
+                                    <input type="number" class="form-control" id="price" name="price" value="{{ item.price }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="effect" class="form-label">효과</label>
+                                    <input type="text" class="form-control" id="effect" name="effect" value="{{ item.effect }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="duration" class="form-label">지속 시간(사용 횟수)</label>
+                                    <input type="number" class="form-control" id="duration" name="duration" value="{{ item.duration }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_uses" class="form-label">최대 사용 횟수</label>
+                                    <input type="number" class="form-control" id="max_uses" name="max_uses" value="{{ item.max_uses }}" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">아이템 수정</button>
+                                <a href="{{ url_for('admin.items') }}" class="btn btn-secondary">취소</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'stocks' %}
+            <!-- 주식 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0"><i class="fas fa-chart-line me-2"></i>주식 관리</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.stocks') }}" method="post" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">주식 이름</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="current_price" class="form-label">초기 가격</label>
+                                    <input type="number" class="form-control" id="current_price" name="current_price" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">주식 추가</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <h4 class="mt-4 mb-3">주식 목록</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이름</th>
+                                    <th>현재 가격</th>
+                                    <th>이전 가격</th>
+                                    <th>변동률</th>
+                                    <th>마지막 업데이트</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stock in stocks %}
+                                <tr>
+                                    <td>{{ stock.id }}</td>
+                                    <td>{{ stock.name }}</td>
+                                    <td>{{ stock.current_price }}원</td>
+                                    <td>{{ stock.previous_price }}원</td>
+                                    <td>
+                                        {% if stock.change_percent|float > 0 %}
+                                        <span class="text-success">+{{ stock.change_percent }}%</span>
+                                        {% elif stock.change_percent|float < 0 %}
+                                        <span class="text-danger">{{ stock.change_percent }}%</span>
+                                        {% else %}
+                                        <span>{{ stock.change_percent }}%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ stock.last_update }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin.edit_stock', stock_id=stock.id) }}" class="btn btn-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <form action="{{ url_for('admin.delete_stock', stock_id=stock.id) }}" method="post">
+                                                <button type="submit" class="btn btn-danger" aria-label="Delete Stock">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'edit_stock' %}
+            <!-- 주식 편집 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0"><i class="fas fa-edit me-2"></i>주식 수정</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.edit_stock', stock_id=stock.id) }}" method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">주식 이름</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ stock.name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="current_price" class="form-label">현재 가격</label>
+                                    <input type="number" class="form-control" id="current_price" name="current_price" value="{{ stock.current_price }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="previous_price" class="form-label">이전 가격</label>
+                                    <input type="text" class="form-control" id="previous_price" value="{{ stock.previous_price }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="change_percent" class="form-label">변동률</label>
+                                    <input type="text" class="form-control" id="change_percent" value="{{ stock.change_percent }}%" readonly>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="last_update" class="form-label">마지막 업데이트</label>
+                                    <input type="text" class="form-control" id="last_update" value="{{ stock.last_update }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">주식 수정</button>
+                                <a href="{{ url_for('admin.stocks') }}" class="btn btn-secondary">취소</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'system' %}
+            <!-- 시스템 관리 -->
+            <div class="card shadow-lg mb-4 border-0">
+                <div class="card-header bg-gradient text-white system-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="fas fa-server me-2"></i>시스템 관리
+                        </h3>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="tooltip" title="데이터 백업">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" data-bs-toggle="tooltip" title="시스템 리셋">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="stat-card bg-primary bg-gradient text-white rounded p-3">
+                                <h5><i class="fas fa-users me-2"></i>활성 사용자</h5>
+                                <h2 class="mb-0" id="active-users-count">{{ stats.active_users }}</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card bg-success bg-gradient text-white rounded p-3">
+                                <h5><i class="fas fa-chart-line me-2"></i>거래량</h5>
+                                <h2 class="mb-0" id="transaction-count">{{ stats.transactions }}</h2>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card bg-info bg-gradient text-white rounded p-3">
+                                <h5><i class="fas fa-gamepad me-2"></i>게임 플레이</h5>
+                                <h2 class="mb-0" id="game-count">{{ stats.game_plays }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 class="mb-3">CSV 파일 상태</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>파일명</th>
+                                    <th>경로</th>
+                                    <th>크기</th>
+                                    <th>행 수</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in csv_stats %}
+                                <tr>
+                                    <td>{{ stat.name }}</td>
+                                    <td>{{ stat.path }}</td>
+                                    <td>{{ stat.size }}</td>
+                                    <td>{{ stat.rows }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>시스템 설정</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">데이터 백업</label>
+                                        <button class="btn btn-success w-100" id="backupBtn">
+                                            <i class="fas fa-download me-2"></i>CSV 데이터 백업
+                                        </button>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">데이터 초기화</label>
+                                        <button class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#resetDataModal">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>데이터 초기화 
+                                        </button>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">시스템 보안</label>
+                                        <button class="btn btn-warning w-100" id="securityBtn">
+                                            <i class="fas fa-shield-alt me-2"></i>보안 점검
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>시스템 통계</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">총 사용자 수</label>
+                                        <h4 class="text-center">{{ users|length }} 명</h4>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">총 거래 건수</label>
+                                        <h4 class="text-center">{{ transactions|length }} 건</h4>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">총 게임 건수</label>
+                                        <h4 class="text-center">{{ game_logs|length if game_logs else 0 }} 건</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 데이터 초기화 모달 -->
+                    <div class="modal fade" id="resetDataModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">데이터 초기화 확인</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="fw-bold text-danger">경고: 이 작업은 모든 CSV 데이터를 초기 상태로 되돌립니다.</p>
+                                    <p>아래 확인 코드를 입력하여 진행하세요:</p>
+                                    <div class="mb-3">
+                                        <input type="text" class="form-control" id="resetConfirmation" placeholder="RESET-DATA-NOW">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                    <button type="button" class="btn btn-danger" id="confirmResetBtn" disabled>초기화 진행</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'config_system' %}
+            <!-- 시스템 설정 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-sliders-h me-2"></i>시스템 설정 관리</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab" aria-controls="current" aria-selected="true">
+                                <i class="fas fa-cog me-2"></i>현재 설정
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="false">
+                                <i class="fas fa-plus me-2"></i>설정 추가
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="myTabContent">
+                        <!-- 현재 설정 탭 -->
+                        <div class="tab-pane fade show active" id="current" role="tabpanel" aria-labelledby="current-tab">
+                            <form method="post" action="{{ url_for('admin.config_system') }}">
+                                <input type="hidden" name="update_settings" value="1">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered">
+                                        <thead class="table-primary">
+                                            <tr>
+                                                <th class="config-key">설정 키</th>
+                                                <th class="config-key">값</th>
+                                                <th class="config-key">설명</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for config in configs %}
+                                            <tr>
+                                                <td class="align-middle">
+                                                    <strong>{{ config.key }}</strong>
+                                                </td>
+                                                <td>
+                                                    {% if config.key in ['enable_games', 'enable_market', 'enable_stocks', 'enable_chat'] %}
+                                                    <select name="{{ config.key }}" class="form-select">
+                                                        <option value="True" {% if config.value == 'True' %}selected{% endif %}>활성화</option>
+                                                        <option value="False" {% if config.value == 'False' %}selected{% endif %}>비활성화</option>
+                                                    </select>
+                                                    {% else %}
+                                                    <input type="text" name="{{ config.key }}" value="{{ config.value }}" class="form-control">
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-muted align-middle">{{ config.description }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>설정 저장
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- 설정 추가 탭 -->
+                        <div class="tab-pane fade" id="add" role="tabpanel" aria-labelledby="add-tab">
+                            <form method="post" action="{{ url_for('admin.config_system') }}">
+                                <input type="hidden" name="add_setting" value="1">
+                                <div class="mb-3">
+                                    <label for="key" class="form-label">설정 키</label>
+                                    <input type="text" class="form-control" id="key" name="key" required placeholder="예: system_name">
+                                    <div class="form-text">설정 키는 고유해야 합니다. 영문, 숫자, 언더스코어(_)만 사용하세요.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="value" class="form-label">설정 값</label>
+                                    <input type="text" class="form-control" id="value" name="value" required placeholder="예: 체스제국">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">설명</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3" required placeholder="이 설정에 대한 설명을 입력하세요"></textarea>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>설정 추가
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'config_games' %}
+            <!-- 게임 설정 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-dice me-2"></i>게임 설정 관리</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="gamesTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="games-list-tab" data-bs-toggle="tab" data-bs-target="#games-list" type="button" role="tab" aria-selected="true">
+                                <i class="fas fa-list me-2"></i>게임 목록
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="add-game-tab" data-bs-toggle="tab" data-bs-target="#add-game" type="button" role="tab" aria-selected="false">
+                                <i class="fas fa-plus me-2"></i>게임 추가
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="gamesTabContent">
+                        <!-- 게임 목록 탭 -->
+                        <div class="tab-pane fade show active" id="games-list" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-bordered">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>이름</th>
+                                            <th>설명</th>
+                                            <th>배팅 한도</th>
+                                            <th>승률 배수</th>
+                                            <th>상태</th>
+                                            <th>관리</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for game in games %}
+                                        <tr>
+                                            <td>{{ game.id }}</td>
+                                            <td>{{ game.name }}</td>
+                                            <td>{{ game.description }}</td>
+                                            <td>{{ game.min_bet }}~{{ game.max_bet }}</td>
+                                            <td>{{ game.win_multiplier }}배</td>
+                                            <td>
+                                                {% if game.enabled == 'True' %}
+                                                <span class="badge bg-success">활성화</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">비활성화</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-primary edit-game-btn" 
+                                                            data-id="{{ game.id }}"
+                                                            data-name="{{ game.name }}"
+                                                            data-description="{{ game.description }}"
+                                                            data-min-bet="{{ game.min_bet }}"
+                                                            data-max-bet="{{ game.max_bet }}"
+                                                            data-enabled="{{ game.enabled }}"
+                                                            data-win-multiplier="{{ game.win_multiplier }}"
+                                                            data-special-win-multiplier="{{ game.special_win_multiplier }}"
+                                                            data-draw-multiplier="{{ game.draw_multiplier }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="post" action="{{ url_for('admin.config_games') }}" class="d-inline">
+                                                        <input type="hidden" name="delete_game" value="1">
+                                                        <input type="hidden" name="delete_id" value="{{ game.id }}">
+                                                        <button type="submit" class="btn btn-danger" onclick="return confirm('정말 삭제하시겠습니까?')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 게임 수정 모달 -->
+                            <div class="modal fade" id="editGameModal" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">게임 설정 수정</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="post" action="{{ url_for('admin.config_games') }}">
+                                            <input type="hidden" name="update_game" value="1">
+                                            <input type="hidden" name="edit_id" id="edit_id">
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label for="edit_name" class="form-label">게임 이름</label>
+                                                    <input type="text" class="form-control" id="edit_name" name="edit_name" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_description" class="form-label">게임 설명</label>
+                                                    <textarea class="form-control" id="edit_description" name="edit_description" rows="3"></textarea>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="edit_min_bet" class="form-label">최소 배팅</label>
+                                                        <input type="number" class="form-control" id="edit_min_bet" name="edit_min_bet" required>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="edit_max_bet" class="form-label">최대 배팅</label>
+                                                        <input type="number" class="form-control" id="edit_max_bet" name="edit_max_bet" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-4 mb-3">
+                                                        <label for="edit_win_multiplier" class="form-label">승리 배수</label>
+                                                        <input type="number" step="0.1" class="form-control" id="edit_win_multiplier" name="edit_win_multiplier" required>
+                                                    </div>
+                                                    <div class="col-md-4 mb-3">
+                                                        <label for="edit_special_win_multiplier" class="form-label">특별 승리 배수</label>
+                                                        <input type="number" step="0.1" class="form-control" id="edit_special_win_multiplier" name="edit_special_win_multiplier">
+                                                    </div>
+                                                    <div class="col-md-4 mb-3">
+                                                        <label for="edit_draw_multiplier" class="form-label">무승부 배수</label>
+                                                        <input type="number" step="0.1" class="form-control" id="edit_draw_multiplier" name="edit_draw_multiplier">
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3 form-check">
+                                                    <input type="checkbox" class="form-check-input" id="edit_enabled" name="edit_enabled">
+                                                    <label class="form-check-label" for="edit_enabled">게임 활성화</label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                <button type="submit" class="btn btn-primary">저장</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 게임 추가 탭 -->
+                        <div class="tab-pane fade" id="add-game" role="tabpanel">
+                            <form method="post" action="{{ url_for('admin.config_games') }}">
+                                <input type="hidden" name="add_game" value="1">
+                                <div class="mb-3">
+                                    <label for="id" class="form-label">게임 ID</label>
+                                    <input type="text" class="form-control" id="id" name="id" required placeholder="예: dice, card, lottery">
+                                    <div class="form-text">ID는 고유해야 합니다. 영문, 숫자, 언더스코어(_)만 사용하세요.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">게임 이름</label>
+                                    <input type="text" class="form-control" id="name" name="name" required placeholder="예: 주사위 게임">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">게임 설명</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="게임에 대한 설명을 입력하세요"></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="min_bet" class="form-label">최소 배팅</label>
+                                        <input type="number" class="form-control" id="min_bet" name="min_bet" required placeholder="예: 100">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="max_bet" class="form-label">최대 배팅</label>
+                                        <input type="number" class="form-control" id="max_bet" name="max_bet" required placeholder="예: 10000">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="win_multiplier" class="form-label">승리 배수</label>
+                                        <input type="number" step="0.1" class="form-control" id="win_multiplier" name="win_multiplier" required placeholder="예: 1.5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="special_win_multiplier" class="form-label">특별 승리 배수</label>
+                                        <input type="number" step="0.1" class="form-control" id="special_win_multiplier" name="special_win_multiplier" placeholder="예: 2.0">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="draw_multiplier" class="form-label">무승부 배수</label>
+                                        <input type="number" step="0.1" class="form-control" id="draw_multiplier" name="draw_multiplier" placeholder="예: 1.0">
+                                    </div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="enabled" name="enabled">
+                                    <label class="form-check-label" for="enabled">게임 활성화</label>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>게임 추가
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'config_politicians' %}
+            <!-- 정치인 설정 관리 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-user-tie me-2"></i>정치인 설정 관리</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="politiciansTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="politicians-list-tab" data-bs-toggle="tab" data-bs-target="#politicians-list" type="button" role="tab" aria-selected="true">
+                                <i class="fas fa-list me-2"></i>정치인 목록
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="add-politician-tab" data-bs-toggle="tab" data-bs-target="#add-politician" type="button" role="tab" aria-selected="false">
+                                <i class="fas fa-plus me-2"></i>정치인 추가
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="politiciansTabContent">
+                        <!-- 정치인 목록 탭 -->
+                        <div class="tab-pane fade show active" id="politicians-list" role="tabpanel">
+                            <div class="row">
+                                {% for politician in politicians %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="card">
+                                        <div class="card-header {% if politician.special == 'True' %}bg-warning{% else %}bg-light{% endif %}">
+                                            <h5 class="mb-0">{{ politician.name }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="text-center mb-3">
+                                                {% if politician.image_url %}
+                                                <img src="{{ politician.image_url }}" alt="{{ politician.name }}" class="img-fluid rounded" style="max-height: 150px;">
+                                                {% else %}
+                                                <div class="bg-light rounded p-3 text-center">
+                                                    <i class="fas fa-user-tie fa-3x text-muted"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <ul class="list-group mb-3">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>정당:</span>
+                                                    <span class="fw-bold">{{ politician.party }}</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>능력치:</span>
+                                                    <span class="fw-bold">{{ politician.power }}/10</span>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>특별 상태:</span>
+                                                    {% if politician.special == 'True' %}
+                                                    <span class="badge bg-warning">특별 정치인</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">일반</span>
+                                                    {% endif %}
+                                                </li>
+                                            </ul>
+                                            <p class="card-text small text-muted">{{ politician.description }}</p>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-primary btn-sm flex-grow-1 edit-politician-btn" 
+                                                        data-id="{{ politician.id }}"
+                                                        data-name="{{ politician.name }}"
+                                                        data-party="{{ politician.party }}"
+                                                        data-power="{{ politician.power }}"
+                                                        data-special="{{ politician.special }}"
+                                                        data-image-url="{{ politician.image_url }}"
+                                                        data-description="{{ politician.description }}">
+                                                    <i class="fas fa-edit me-1"></i>수정
+                                                </button>
+                                                <form method="post" action="{{ url_for('admin.config_politicians') }}" class="flex-grow-1">
+                                                    <input type="hidden" name="delete_politician" value="1">
+                                                    <input type="hidden" name="delete_id" value="{{ politician.id }}">
+                                                    <button type="submit" class="btn btn-danger btn-sm w-100" onclick="return confirm('정말 삭제하시겠습니까?')">
+                                                        <i class="fas fa-trash me-1"></i>삭제
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- 정치인 수정 모달 -->
+                            <div class="modal fade" id="editPoliticianModal" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">정치인 설정 수정</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="post" action="{{ url_for('admin.config_politicians') }}">
+                                            <input type="hidden" name="update_politician" value="1">
+                                            <input type="hidden" name="edit_id" id="edit_politician_id">
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label for="edit_politician_name" class="form-label">이름</label>
+                                                    <input type="text" class="form-control" id="edit_politician_name" name="edit_name" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_politician_party" class="form-label">정당</label>
+                                                    <input type="text" class="form-control" id="edit_politician_party" name="edit_party">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_politician_power" class="form-label">능력치 (1-10)</label>
+                                                    <input type="number" class="form-control" id="edit_politician_power" name="edit_power" min="1" max="10" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_politician_image_url" class="form-label">이미지 URL</label>
+                                                    <input type="text" class="form-control" id="edit_politician_image_url" name="edit_image_url">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_politician_description" class="form-label">설명</label>
+                                                    <textarea class="form-control" id="edit_politician_description" name="edit_description" rows="3"></textarea>
+                                                </div>
+                                                <div class="mb-3 form-check">
+                                                    <input type="checkbox" class="form-check-input" id="edit_politician_special" name="edit_special">
+                                                    <label class="form-check-label" for="edit_politician_special">특별 정치인</label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                                <button type="submit" class="btn btn-primary">저장</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 정치인 추가 탭 -->
+                        <div class="tab-pane fade" id="add-politician" role="tabpanel">
+                            <form method="post" action="{{ url_for('admin.config_politicians') }}">
+                                <input type="hidden" name="add_politician" value="1">
+                                <div class="mb-3">
+                                    <label for="politician_id" class="form-label">정치인 ID</label>
+                                    <input type="text" class="form-control" id="politician_id" name="id" required placeholder="예: politician1, leader2">
+                                    <div class="form-text">ID는 고유해야 합니다. 영문, 숫자, 언더스코어(_)만 사용하세요.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="politician_name" class="form-label">이름</label>
+                                    <input type="text" class="form-control" id="politician_name" name="name" required placeholder="정치인 이름">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="politician_party" class="form-label">정당</label>
+                                    <input type="text" class="form-control" id="politician_party" name="party" placeholder="정당명">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="politician_power" class="form-label">능력치 (1-10)</label>
+                                    <input type="number" class="form-control" id="politician_power" name="power" min="1" max="10" required value="5">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="politician_image_url" class="form-label">이미지 URL</label>
+                                    <input type="text" class="form-control" id="politician_image_url" name="image_url" placeholder="이미지 URL 주소">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="politician_description" class="form-label">설명</label>
+                                    <textarea class="form-control" id="politician_description" name="description" rows="3" placeholder="정치인에 대한 설명"></textarea>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="politician_special" name="special">
+                                    <label class="form-check-label" for="politician_special">특별 정치인</label>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>정치인 추가
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if section == 'csv_editor' %}
+            <!-- CSV 파일 편집기 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="fas fa-table me-2"></i>CSV 파일 편집기</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="list-group mb-3">
+                                <div class="list-group-item list-group-item-action bg-light fw-bold">
+                                    <i class="fas fa-file-csv me-2"></i>CSV 파일 선택
+                                </div>
+                                {% for csv_file in csv_files %}
+                                <a href="{{ url_for('admin.csv_editor', file=csv_file.name) }}" class="list-group-item list-group-item-action {% if file_name == csv_file.name %}active{% endif %}">
+                                    <i class="fas fa-file-alt me-2"></i>{{ csv_file.name }}
+                                    <small class="d-block text-muted">{{ csv_file.description }}</small>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            {% if file_name %}
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">{{ file_name }} 편집</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="csvEditorForm" action="{{ url_for('admin.save_csv') }}" method="post">
+                                        <input type="hidden" name="file_name" value="{{ file_name }}">
+                                        <input type="hidden" name="csv_data" id="csvData">
+
+                                        <div class="mb-3">
+                                            <div class="csv-editor" id="csvEditor" style="height: 400px; border: 1px solid #ccc; overflow: auto;">
+                                                <table class="table table-bordered table-hover" id="csvTable">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            {% for header in csv_headers %}
+                                                            <th>{{ header }}</th>
+                                                            {% endfor %}
+                                                            <th style="width: 70px;">작업</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for row in csv_data %}
+                                                        <tr>
+                                                            {% for cell in row %}
+                                                            <td contenteditable="true">{{ cell }}</td>
+                                                            {% endfor %}
+                                                            <td>
+                                                                <button type="button" class="btn btn-sm btn-danger delete-row" title="행 삭제">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <td colspan="{{ csv_headers|length + 1 }}">
+                                                                <button type="button" class="btn btn-sm btn-success" id="addRow">
+                                                                    <i class="fas fa-plus me-1"></i> 행 추가
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <button type="button" class="btn btn-warning" onclick="resetTable()">
+                                                    <i class="fas fa-undo me-1"></i> 초기화
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <button type="submit" class="btn btn-primary" id="saveCSV">
+                                                    <i class="fas fa-save me-1"></i> 저장
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning mt-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i> <strong>주의!</strong> CSV 파일 편집 시 데이터가 손상될 수 있습니다. 저장 전에 꼭 백업을 해주세요.
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> 좌측 메뉴에서 편집할 CSV 파일을 선택해주세요.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js 설정
+        var chartElement = document.getElementById('statsChart');
+        if (!chartElement) return; // 차트가 필요한 페이지가 아닌 경우 중단
+        
+        var ctx = chartElement.getContext('2d');
+        if(ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['사용자', '거래', '게임', '주식', '아이템'],
+                    datasets: [{
+                        label: '데이터 수',
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1,
+                        data: [
+                            {{ dashboard.data_count.users if dashboard and dashboard.data_count else 0 }}, 
+                            {{ dashboard.data_count.transactions if dashboard and dashboard.data_count else 0 }}, 
+                            {{ dashboard.data_count.game_logs if dashboard and dashboard.data_count else 0 }}, 
+                            {{ dashboard.config_count.stocks if dashboard and dashboard.config_count else 0 }}, 
+                            {{ dashboard.config_count.market if dashboard and dashboard.config_count else 0 }}
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 게임 수정 모달
+        const gameModal = document.getElementById('editGameModal');
+        if (gameModal) {
+            const editButtons = document.querySelectorAll('.edit-game-btn');
+            editButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const gameId = this.getAttribute('data-id');
+                    const gameName = this.getAttribute('data-name');
+                    const gameDesc = this.getAttribute('data-description');
+                    const minBet = this.getAttribute('data-min-bet');
+                    const maxBet = this.getAttribute('data-max-bet');
+                    const enabled = this.getAttribute('data-enabled') === 'True';
+                    const winMultiplier = this.getAttribute('data-win-multiplier');
+                    const specialWinMultiplier = this.getAttribute('data-special-win-multiplier');
+                    const drawMultiplier = this.getAttribute('data-draw-multiplier');
+
+                    document.getElementById('edit_id').value = gameId;
+                    document.getElementById('edit_name').value = gameName;
+                    document.getElementById('edit_description').value = gameDesc;
+                    document.getElementById('edit_min_bet').value = minBet;
+                    document.getElementById('edit_max_bet').value = maxBet;
+                    document.getElementById('edit_enabled').checked = enabled;
+                    document.getElementById('edit_win_multiplier').value = winMultiplier;
+                    document.getElementById('edit_special_win_multiplier').value = specialWinMultiplier;
+                    document.getElementById('edit_draw_multiplier').value = drawMultiplier;
+
+                    const modal = new bootstrap.Modal(gameModal);
+                    modal.show();
+                });
+            });
+        }
+
+        // 정치인 수정 모달
+        const politicianModal = document.getElementById('editPoliticianModal');
+        if (politicianModal) {
+            const editButtons = document.querySelectorAll('.edit-politician-btn');
+            editButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const name = this.getAttribute('data-name');
+                    const party = this.getAttribute('data-party');
+                    const power = this.getAttribute('data-power');
+                    const special = this.getAttribute('data-special') === 'True';
+                    const imageUrl = this.getAttribute('data-image-url');
+                    const description = this.getAttribute('data-description');
+
+                    document.getElementById('edit_politician_id').value = id;
+                    document.getElementById('edit_politician_name').value = name;
+                    document.getElementById('edit_politician_party').value = party;
+                    document.getElementById('edit_politician_power').value = power;
+                    document.getElementById('edit_politician_special').checked = special;
+                    document.getElementById('edit_politician_image_url').value = imageUrl;
+                    document.getElementById('edit_politician_description').value = description;
+
+                    const modal = new bootstrap.Modal(politicianModal);
+                    modal.show();
+                });
+            });
+        }
+
+        // 시스템 설정 오류 방지 - null 값 처리
+        const systemConfigInputs = document.querySelectorAll('input[name^="config_"], select[name^="config_"]');
+        if (systemConfigInputs) {
+            systemConfigInputs.forEach(input => {
+                if (input.value === 'null' || input.value === 'undefined') {
+                    input.value = '';
+                }
+            });
+        }
+
+        // CSV 편집기 기능
+        const csvEditor = document.getElementById('csvEditorForm');
+        if (csvEditor) {
+            // 테이블의 모든 데이터를 JSON 형식으로 변환
+            function getTableData() {
+                const table = document.getElementById('csvTable');
+                const headers = [];
+                const data = [];
+
+                // 헤더 추출
+                const headerCells = table.querySelectorAll('thead th:not(:last-child)');
+                headerCells.forEach(cell => {
+                    headers.push(cell.textContent.trim());
+                });
+
+                // 데이터 행 추출
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const rowData = [];
+                    const cells = row.querySelectorAll('td:not(:last-child)');
+                    cells.forEach(cell => {
+                        rowData.push(cell.textContent.trim());
+                    });
+                    if (rowData.length > 0) {
+                        data.push(rowData);
+                    }
+                });
+
+                return [headers, ...data];
+            }
+
+            // 폼 제출 시 데이터 준비
+            csvEditor.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const tableData = getTableData();
+                document.getElementById('csvData').value = JSON.stringify(tableData);
+
+                this.submit();
+            });
+
+            // 행 삭제 버튼
+            document.querySelectorAll('.delete-row').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('정말 이 행을 삭제하시겠습니까?')) {
+                        this.closest('tr').remove();
+                    }
+                });
+            });
+
+            // 행 추가 버튼
+            const addRowBtn = document.getElementById('addRow');
+            if (addRowBtn) {
+                addRowBtn.addEventListener('click', function() {
+                    const table = document.getElementById('csvTable');
+                    const tbody = table.querySelector('tbody');
+                    const headerCount = table.querySelectorAll('thead th:not(:last-child)').length;
+
+                    const newRow = document.createElement('tr');
+
+                    // 빈 셀 추가
+                    for (let i = 0; i < headerCount; i++) {
+                        const cell = document.createElement('td');
+                        cell.contentEditable = 'true';
+                        newRow.appendChild(cell);
+                    }
+
+                    // 삭제 버튼 셀 추가
+                    const actionCell = document.createElement('td');
+                    actionCell.innerHTML = '<button type="button" class="btn btn-sm btn-danger delete-row" title="행 삭제"><i class="fas fa-trash"></i></button>';
+                    newRow.appendChild(actionCell);
+
+                    // 삭제 버튼 이벤트 추가
+                    newRow.querySelector('.delete-row').addEventListener('click', function() {
+                        if (confirm('정말 이 행을 삭제하시겠습니까?')) {
+                            this.closest('tr').remove();
+                        }
+                    });
+
+                    tbody.appendChild(newRow);
+                });
+            }
+
+            // 테이블 초기화 함수
+            window.resetTable = function() {
+                if (confirm('정말 모든 변경사항을 초기화하시겠습니까?')) {
+                    location.reload();
+                }
+            };
+        }
+    });
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

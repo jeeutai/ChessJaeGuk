@@ -1,0 +1,254 @@
+{% extends 'admin.html' %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 데이터 복원 카드 -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">데이터 복원</h4>
+                </div>
+                <div class="card-body">
+                    <!-- 경고 메시지 -->
+                    <div class="alert alert-warning">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-exclamation-triangle fa-3x"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading">주의: 데이터 복원은 위험한 작업입니다!</h5>
+                                <p>데이터 복원 작업은 현재의 모든 데이터를 백업 파일의 데이터로 덮어쓰기 때문에 신중하게 진행해야 합니다.</p>
+                                <hr>
+                                <p class="mb-0">백업 파일을 복원하기 전에 현재 데이터를 백업하는 것을 강력히 권장합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 복원 탭 -->
+                    <ul class="nav nav-tabs mb-3" id="restoreTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="restore-file-tab" data-bs-toggle="tab" data-bs-target="#restore-file" type="button" role="tab" aria-controls="restore-file" aria-selected="true">
+                                <i class="fas fa-file-archive"></i> 백업 파일에서 복원
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="restore-upload-tab" data-bs-toggle="tab" data-bs-target="#restore-upload" type="button" role="tab" aria-controls="restore-upload" aria-selected="false">
+                                <i class="fas fa-upload"></i> 파일 업로드
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="restoreTabContent">
+                        <!-- 기존 백업에서 복원 -->
+                        <div class="tab-pane fade show active" id="restore-file" role="tabpanel" aria-labelledby="restore-file-tab">
+                            <form action="{{ url_for('admin.restore_data') }}" method="post">
+                                <input type="hidden" name="restore_from_file" value="1">
+                                
+                                <div class="mb-4">
+                                    <label for="backup_file" class="form-label">백업 파일 선택</label>
+                                    <select class="form-select" id="backup_file" name="backup_file" required>
+                                        <option value="">백업 파일 선택...</option>
+                                        {% for backup in backup_files %}
+                                        <option value="{{ backup.name }}">{{ backup.name }} ({{ backup.created_at }}, {{ backup.size }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="restore_all" name="restore_all" value="1" checked>
+                                        <label class="form-check-label" for="restore_all">모든 데이터 복원</label>
+                                    </div>
+                                    <div class="form-text">모든 CSV 파일을 복원합니다. 체크 해제 시 특정 파일만 선택하여 복원할 수 있습니다.</div>
+                                </div>
+                                
+                                <div id="specificRestore" style="display: none;">
+                                    <div class="mb-4">
+                                        <label class="form-label">복원할 데이터 선택</label>
+                                        <div class="row">
+                                            {% for key, path in csv_files.items() %}
+                                            <div class="col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="restore_file_{{ key }}" name="restore_files[]" value="{{ key }}">
+                                                    <label class="form-check-label" for="restore_file_{{ key }}">
+                                                        {{ key }}.csv
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="backup_before_restore" name="backup_before_restore" value="1" checked>
+                                        <label class="form-check-label" for="backup_before_restore">복원 전 현재 데이터 백업</label>
+                                    </div>
+                                    <div class="form-text">복원 작업 전에 현재 데이터를 백업합니다. 이렇게 하면 복원 작업이 실패하거나 문제가 발생했을 때 롤백할 수 있습니다.</div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="confirm_restore" name="confirm_restore" value="1" required>
+                                        <label class="form-check-label" for="confirm_restore">복원 확인</label>
+                                    </div>
+                                    <div class="form-text text-danger">이 작업은 되돌릴 수 없으며, 선택한 데이터가 백업 파일의 데이터로 완전히 대체됩니다. 이 확인란을 선택하여 계속 진행할 것을 확인하세요.</div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-sync-alt"></i> 데이터 복원
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 업로드에서 복원 -->
+                        <div class="tab-pane fade" id="restore-upload" role="tabpanel" aria-labelledby="restore-upload-tab">
+                            <form action="{{ url_for('admin.restore_data') }}" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="restore_from_upload" value="1">
+                                
+                                <div class="mb-4">
+                                    <label for="upload_file" class="form-label">백업 파일 업로드</label>
+                                    <input type="file" class="form-control" id="upload_file" name="upload_file" accept=".zip" required>
+                                    <div class="form-text">이전에 다운로드한 백업 파일(.zip)을 선택하세요.</div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="upload_restore_all" name="restore_all" value="1" checked>
+                                        <label class="form-check-label" for="upload_restore_all">모든 데이터 복원</label>
+                                    </div>
+                                </div>
+                                
+                                <div id="specificUploadRestore" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> 업로드 후 특정 파일을 선택하여 복원할 수 있습니다.
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="upload_backup_before_restore" name="backup_before_restore" value="1" checked>
+                                        <label class="form-check-label" for="upload_backup_before_restore">복원 전 현재 데이터 백업</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="upload_confirm_restore" name="confirm_restore" value="1" required>
+                                        <label class="form-check-label" for="upload_confirm_restore">복원 확인</label>
+                                    </div>
+                                    <div class="form-text text-danger">이 작업은 되돌릴 수 없습니다. 이 확인란을 선택하여 계속 진행할 것을 확인하세요.</div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-upload"></i> 업로드 및 복원
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 복원 이력 카드 -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">복원 이력</h4>
+                </div>
+                <div class="card-body">
+                    {% if restore_history %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>날짜/시간</th>
+                                    <th>백업 파일</th>
+                                    <th>상태</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for history in restore_history %}
+                                <tr>
+                                    <td>{{ history.timestamp }}</td>
+                                    <td>{{ history.backup_file }}</td>
+                                    <td>
+                                        {% if history.success %}
+                                        <span class="badge bg-success">성공</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">실패</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 복원 이력이 없습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 도움말 카드 -->
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">도움말</h4>
+                </div>
+                <div class="card-body">
+                    <h5>데이터 복원 시 참고사항</h5>
+                    <ul>
+                        <li>복원 작업은 시스템이 비활성화된 상태에서 진행하는 것이 안전합니다.</li>
+                        <li>복원 중에는 다른 관리 작업을 수행하지 마세요.</li>
+                        <li>복원에 실패한 경우 자동으로 생성된 백업에서 이전 상태로 되돌릴 수 있습니다.</li>
+                        <li>대용량 데이터 복원은 시간이 오래 걸릴 수 있습니다.</li>
+                    </ul>
+                    
+                    <div class="alert alert-danger mt-3">
+                        <i class="fas fa-exclamation-circle"></i> <strong>중요:</strong> 이 기능은 관리자만 사용해야 합니다.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 모든 데이터 복원 체크박스 변경 이벤트
+    const restoreAllCheckbox = document.getElementById('restore_all');
+    const specificRestore = document.getElementById('specificRestore');
+    
+    if (restoreAllCheckbox && specificRestore) {
+        restoreAllCheckbox.addEventListener('change', function() {
+            specificRestore.style.display = this.checked ? 'none' : 'block';
+            
+            // 모든 데이터 복원이 체크되면 개별 파일 체크박스 모두 해제
+            if (this.checked) {
+                document.querySelectorAll('input[name="restore_files[]"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+        });
+    }
+    
+    // 업로드 모든 데이터 복원 체크박스 변경 이벤트
+    const uploadRestoreAllCheckbox = document.getElementById('upload_restore_all');
+    const specificUploadRestore = document.getElementById('specificUploadRestore');
+    
+    if (uploadRestoreAllCheckbox && specificUploadRestore) {
+        uploadRestoreAllCheckbox.addEventListener('change', function() {
+            specificUploadRestore.style.display = this.checked ? 'none' : 'block';
+        });
+    }
+});
+</script>
+{% endblock %}

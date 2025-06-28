@@ -1,0 +1,667 @@
+{% extends 'admin_layout.html' %}
+
+{% block title %}API 설정 관리{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include 'admin_sidebar.html' %}
+        
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">API 설정 관리</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#generateKeyModal">
+                        <i class="fas fa-key"></i> 새 API 키 생성
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#addClientModal">
+                        <i class="fas fa-user-plus"></i> 클라이언트 추가
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 통계 대시보드 -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        활성 API 키</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ api_stats.active_keys }} / {{ api_stats.total_keys }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-key fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        활성 클라이언트</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ api_stats.active_clients }} / {{ api_stats.total_clients }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        API 성공률</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ api_stats.success_logs }} / {{ api_stats.total_logs }}
+                                        ({{ (api_stats.success_logs / api_stats.total_logs * 100)|round(1) if api_stats.total_logs > 0 else 100 }}%)
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        API 상태</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {% if api_enabled == 'True' %}
+                                        <span class="badge bg-success">활성화</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">비활성화</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-toggle-on fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">API 관리</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="apiTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="keys-tab" data-bs-toggle="tab" data-bs-target="#keys" type="button" role="tab" aria-controls="keys" aria-selected="true">API 키</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab" aria-controls="clients" aria-selected="false">클라이언트</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab" aria-controls="logs" aria-selected="false">로그</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">설정</button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="apiTabsContent">
+                                <!-- API 키 탭 -->
+                                <div class="tab-pane fade show active" id="keys" role="tabpanel" aria-labelledby="keys-tab">
+                                    <div class="table-responsive mt-4">
+                                        <table class="table table-bordered" id="apiKeysTable" width="100%" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>키</th>
+                                                    <th>설명</th>
+                                                    <th>클라이언트</th>
+                                                    <th>생성일</th>
+                                                    <th>만료일</th>
+                                                    <th>권한</th>
+                                                    <th>상태</th>
+                                                    <th>액션</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for key in api_keys %}
+                                                <tr>
+                                                    <td>{{ key.id }}</td>
+                                                    <td>
+                                                        <div class="input-group">
+                                                            <input type="password" class="form-control form-control-sm api-key-field" value="{{ key.key }}" readonly>
+                                                            <button class="btn btn-sm btn-outline-secondary toggle-key" type="button">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-outline-primary copy-key" type="button" data-key="{{ key.key }}">
+                                                                <i class="fas fa-copy"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ key.description }}</td>
+                                                    <td>
+                                                        {% if key.client_id %}
+                                                            {% for client in api_clients %}
+                                                                {% if client.id == key.client_id %}
+                                                                    {{ client.client_name }}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            -
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ key.created_at }}</td>
+                                                    <td>
+                                                        {% if key.expires_at %}
+                                                            {{ key.expires_at }}
+                                                        {% else %}
+                                                            무기한
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ key.permissions }}</td>
+                                                    <td>
+                                                        {% if key.status == 'active' %}
+                                                            <span class="badge bg-success">활성</span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">취소됨</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if key.status == 'active' %}
+                                                        <form method="post" class="d-inline">
+                                                            <input type="hidden" name="key_id" value="{{ key.id }}">
+                                                            <button type="submit" name="revoke_key" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 API 키를 취소하시겠습니까?');">
+                                                                취소
+                                                            </button>
+                                                        </form>
+                                                        {% else %}
+                                                        <button class="btn btn-sm btn-secondary" disabled>취소됨</button>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- 클라이언트 탭 -->
+                                <div class="tab-pane fade" id="clients" role="tabpanel" aria-labelledby="clients-tab">
+                                    <div class="table-responsive mt-4">
+                                        <table class="table table-bordered" id="apiClientsTable" width="100%" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>이름</th>
+                                                    <th>유형</th>
+                                                    <th>연락처</th>
+                                                    <th>승인자</th>
+                                                    <th>승인일</th>
+                                                    <th>API 할당량</th>
+                                                    <th>상태</th>
+                                                    <th>액션</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for client in api_clients %}
+                                                <tr>
+                                                    <td>{{ client.id }}</td>
+                                                    <td>{{ client.client_name }}</td>
+                                                    <td>{{ client.client_type }}</td>
+                                                    <td>
+                                                        {{ client.contact_name }}<br>
+                                                        <small>{{ client.contact_email }}</small>
+                                                    </td>
+                                                    <td>{{ client.approved_by }}</td>
+                                                    <td>{{ client.approval_date }}</td>
+                                                    <td>{{ client.api_quota }}</td>
+                                                    <td>
+                                                        {% if client.status == 'active' %}
+                                                            <span class="badge bg-success">활성</span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">비활성</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary edit-client-btn" 
+                                                                data-bs-toggle="modal" data-bs-target="#editClientModal"
+                                                                data-client-id="{{ client.id }}"
+                                                                data-client-name="{{ client.client_name }}"
+                                                                data-client-type="{{ client.client_type }}"
+                                                                data-client-email="{{ client.contact_email }}"
+                                                                data-client-contact="{{ client.contact_name }}"
+                                                                data-client-status="{{ client.status }}"
+                                                                data-client-quota="{{ client.api_quota }}">
+                                                            편집
+                                                        </button>
+                                                        <form method="post" class="d-inline">
+                                                            <input type="hidden" name="client_id" value="{{ client.id }}">
+                                                            <button type="submit" name="delete_client" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 클라이언트를 삭제하시겠습니까? 연결된 모든 API 키가 취소됩니다.');">
+                                                                삭제
+                                                            </button>
+                                                        </form>
+                                                        <button type="button" class="btn btn-sm btn-success" 
+                                                                data-bs-toggle="modal" data-bs-target="#generateKeyModal"
+                                                                data-client-id="{{ client.id }}"
+                                                                data-client-name="{{ client.client_name }}">
+                                                            키 생성
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- 로그 탭 -->
+                                <div class="tab-pane fade" id="logs" role="tabpanel" aria-labelledby="logs-tab">
+                                    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                                        <h5>API 요청 로그</h5>
+                                        <div>
+                                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#clearLogsModal">
+                                                <i class="fas fa-trash"></i> 로그 정리
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="apiLogsTable" width="100%" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>시간</th>
+                                                    <th>키 ID</th>
+                                                    <th>엔드포인트</th>
+                                                    <th>클라이언트 IP</th>
+                                                    <th>응답 코드</th>
+                                                    <th>응답 시간</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for log in api_logs %}
+                                                <tr>
+                                                    <td>{{ log.timestamp }}</td>
+                                                    <td>{{ log.key_id }}</td>
+                                                    <td>{{ log.endpoint }}</td>
+                                                    <td>{{ log.client_ip }}</td>
+                                                    <td>
+                                                        {% if log.response_code.startswith('2') %}
+                                                            <span class="badge bg-success">{{ log.response_code }}</span>
+                                                        {% elif log.response_code.startswith('3') %}
+                                                            <span class="badge bg-info">{{ log.response_code }}</span>
+                                                        {% elif log.response_code.startswith('4') %}
+                                                            <span class="badge bg-warning">{{ log.response_code }}</span>
+                                                        {% elif log.response_code.startswith('5') %}
+                                                            <span class="badge bg-danger">{{ log.response_code }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">{{ log.response_code }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ log.response_time }}ms</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- 설정 탭 -->
+                                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                    <div class="row mt-4">
+                                        <div class="col-lg-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="m-0 font-weight-bold text-primary">API 전역 설정</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form method="post">
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="api_enabled" name="api_enabled" {% if api_enabled == 'True' %}checked{% endif %}>
+                                                            <label class="form-check-label" for="api_enabled">API 활성화</label>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="api_rate_limit_global" class="form-label">전역 비율 제한 (요청/분)</label>
+                                                            <input type="number" class="form-control" id="api_rate_limit_global" name="api_rate_limit_global" value="{{ api_rate_limit_global }}" min="1">
+                                                        </div>
+                                                        
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="api_require_key" name="api_require_key" {% if api_require_key == 'True' %}checked{% endif %}>
+                                                            <label class="form-check-label" for="api_require_key">API 키 필수화</label>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" class="form-check-input" id="api_allow_cors" name="api_allow_cors" {% if api_allow_cors == 'True' %}checked{% endif %}>
+                                                            <label class="form-check-label" for="api_allow_cors">CORS 허용</label>
+                                                        </div>
+                                                        
+                                                        <div class="mb-3">
+                                                            <label for="api_cors_origins" class="form-label">CORS 허용 출처 (콤마로 구분, * 는 모든 출처 허용)</label>
+                                                            <input type="text" class="form-control" id="api_cors_origins" name="api_cors_origins" value="{{ api_cors_origins }}">
+                                                        </div>
+                                                        
+                                                        <button type="submit" name="update_api_settings" class="btn btn-primary">설정 저장</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-lg-6">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="m-0 font-weight-bold text-primary">API 사용법</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p>API를 사용하려면 요청 헤더에 인증 정보를 포함해야 합니다:</p>
+                                                    
+                                                    <div class="mb-3">
+                                                        <label class="form-label">인증 헤더 예시:</label>
+                                                        <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                                                    </div>
+                                                    
+                                                    <p>API 엔드포인트 예시:</p>
+                                                    <ul>
+                                                        <li><code>GET /api/v1/users</code> - 사용자 목록 조회</li>
+                                                        <li><code>GET /api/v1/transactions</code> - 거래 내역 조회</li>
+                                                        <li><code>POST /api/v1/transfer</code> - 송금 요청</li>
+                                                    </ul>
+                                                    
+                                                    <p>상세한 API 문서는 <a href="/api/docs" target="_blank">여기</a>에서 확인하세요.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- API 키 생성 모달 -->
+<div class="modal fade" id="generateKeyModal" tabindex="-1" aria-labelledby="generateKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateKeyModalLabel">새 API 키 생성</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <input type="text" class="form-control" id="description" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">클라이언트</label>
+                        <select class="form-select" id="client_id" name="client_id">
+                            <option value="">클라이언트 없음</option>
+                            {% for client in api_clients %}
+                                {% if client.status == 'active' %}
+                                <option value="{{ client.id }}">{{ client.client_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="permissions" class="form-label">권한</label>
+                        <select class="form-select" id="permissions" name="permissions" required>
+                            <option value="read">읽기 전용</option>
+                            <option value="write">쓰기 가능</option>
+                            <option value="admin">관리자</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="rate_limit" class="form-label">요청 제한 (분당)</label>
+                        <input type="number" class="form-control" id="rate_limit" name="rate_limit" value="100" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="expiry_days" class="form-label">만료일 (일, 0은 무기한)</label>
+                        <input type="number" class="form-control" id="expiry_days" name="expiry_days" value="365" min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="generate_key" class="btn btn-primary">생성</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 클라이언트 추가 모달 -->
+<div class="modal fade" id="addClientModal" tabindex="-1" aria-labelledby="addClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addClientModalLabel">새 API 클라이언트 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="client_name" class="form-label">클라이언트 이름</label>
+                        <input type="text" class="form-control" id="client_name" name="client_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="client_type" class="form-label">클라이언트 유형</label>
+                        <select class="form-select" id="client_type" name="client_type" required>
+                            <option value="application">애플리케이션</option>
+                            <option value="service">서비스</option>
+                            <option value="personal">개인</option>
+                            <option value="business">기업</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">연락처 이메일</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_name" class="form-label">연락처 이름</label>
+                        <input type="text" class="form-control" id="contact_name" name="contact_name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="api_quota" class="form-label">API 할당량 (월간)</label>
+                        <input type="number" class="form-control" id="api_quota" name="api_quota" value="10000" min="1000" step="1000" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="add_client" class="btn btn-primary">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 클라이언트 편집 모달 -->
+<div class="modal fade" id="editClientModal" tabindex="-1" aria-labelledby="editClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editClientModalLabel">API 클라이언트 편집</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_client_id" name="client_id">
+                    
+                    <div class="mb-3">
+                        <label for="edit_client_name" class="form-label">클라이언트 이름</label>
+                        <input type="text" class="form-control" id="edit_client_name" disabled>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">상태</label>
+                        <select class="form-select" id="edit_status" name="status">
+                            <option value="active">활성</option>
+                            <option value="inactive">비활성</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_api_quota" class="form-label">API 할당량 (월간)</label>
+                        <input type="number" class="form-control" id="edit_api_quota" name="api_quota" min="1000" step="1000">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="update_client" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 로그 정리 모달 -->
+<div class="modal fade" id="clearLogsModal" tabindex="-1" aria-labelledby="clearLogsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clearLogsModalLabel">API 로그 정리</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="days" class="form-label">며칠 이전의 로그를 삭제하시겠습니까?</label>
+                        <input type="number" class="form-control" id="days" name="days" value="30" min="0">
+                        <small class="form-text text-muted">0을 입력하면 모든 로그가 삭제됩니다.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="clear_logs" class="btn btn-danger">로그 정리</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 클라이언트 편집 모달 데이터 설정
+        const editClientModal = document.getElementById('editClientModal');
+        if (editClientModal) {
+            editClientModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const clientId = button.getAttribute('data-client-id');
+                const clientName = button.getAttribute('data-client-name');
+                const clientStatus = button.getAttribute('data-client-status');
+                const clientQuota = button.getAttribute('data-client-quota');
+                
+                const modalClientId = document.getElementById('edit_client_id');
+                const modalClientName = document.getElementById('edit_client_name');
+                const modalStatus = document.getElementById('edit_status');
+                const modalQuota = document.getElementById('edit_api_quota');
+                
+                modalClientId.value = clientId;
+                modalClientName.value = clientName;
+                modalStatus.value = clientStatus;
+                modalQuota.value = clientQuota;
+            });
+        }
+        
+        // API 키 생성 모달 클라이언트 설정
+        const generateKeyModal = document.getElementById('generateKeyModal');
+        if (generateKeyModal) {
+            generateKeyModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const clientId = button.getAttribute('data-client-id');
+                const clientName = button.getAttribute('data-client-name');
+                
+                if (clientId) {
+                    const modalClientId = document.getElementById('client_id');
+                    modalClientId.value = clientId;
+                    
+                    const modalDescription = document.getElementById('description');
+                    modalDescription.value = `${clientName} API 키`;
+                }
+            });
+        }
+        
+        // API 키 표시/숨김 토글
+        const toggleButtons = document.querySelectorAll('.toggle-key');
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const input = this.parentElement.querySelector('.api-key-field');
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+        
+        // API 키 복사
+        const copyButtons = document.querySelectorAll('.copy-key');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const key = this.getAttribute('data-key');
+                navigator.clipboard.writeText(key).then(() => {
+                    alert('API 키가 클립보드에 복사되었습니다.');
+                });
+            });
+        });
+        
+        // 탭 상태 유지
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        
+        if (tabParam) {
+            const tab = document.querySelector(`#${tabParam}-tab`);
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }
+        
+        // 탭 변경 시 URL 업데이트
+        const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(event) {
+                const targetId = event.target.id.replace('-tab', '');
+                const url = new URL(window.location);
+                url.searchParams.set('tab', targetId);
+                window.history.replaceState({}, '', url);
+            });
+        });
+    });
+</script>
+{% endblock %}

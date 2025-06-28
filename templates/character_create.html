@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}캐릭터 생성{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>새 캐릭터 생성</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('character.create') }}">
+                <div class="form-group mb-3">
+                    <label for="class">캐릭터 클래스 선택:</label>
+                    <select class="form-control" id="class" name="class" required>
+                        <option value="warrior">전사 (높은 체력과 힘)</option>
+                        <option value="mage">마법사 (높은 마나와 지능)</option>
+                        <option value="rogue">도적 (높은 민첩성)</option>
+                    </select>
+                </div>
+                
+                <div class="class-info mb-4">
+                    <div id="warrior-info" class="class-description">
+                        <h4>전사</h4>
+                        <p>전사는 높은 체력과 물리 공격력을 가진 클래스입니다. 근접 전투에 특화되어 있으며, 적의 공격을 견디는 능력이 뛰어납니다.</p>
+                        <ul>
+                            <li>체력: 120</li>
+                            <li>마나: 50</li>
+                            <li>힘: 15</li>
+                            <li>민첩: 10</li>
+                            <li>지능: 10</li>
+                        </ul>
+                    </div>
+                    <div id="mage-info" class="class-description" style="display: none;">
+                        <h4>마법사</h4>
+                        <p>마법사는 높은 마나와 지능을 가진 클래스입니다. 강력한 마법 공격으로 적을 제압할 수 있지만, 체력이 낮아 주의가 필요합니다.</p>
+                        <ul>
+                            <li>체력: 100</li>
+                            <li>마나: 100</li>
+                            <li>힘: 10</li>
+                            <li>민첩: 10</li>
+                            <li>지능: 15</li>
+                        </ul>
+                    </div>
+                    <div id="rogue-info" class="class-description" style="display: none;">
+                        <h4>도적</h4>
+                        <p>도적은 높은 민첩성을 가진 클래스입니다. 빠른 공격과 회피 능력이 특징이며, 은신 기술로 전투를 유리하게 이끌 수 있습니다.</p>
+                        <ul>
+                            <li>체력: 100</li>
+                            <li>마나: 50</li>
+                            <li>힘: 10</li>
+                            <li>민첩: 15</li>
+                            <li>지능: 10</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg btn-block">캐릭터 생성</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 클래스 선택에 따라 정보 표시
+    document.getElementById('class').addEventListener('change', function() {
+        // 모든 클래스 정보 숨기기
+        document.querySelectorAll('.class-description').forEach(function(el) {
+            el.style.display = 'none';
+        });
+        
+        // 선택한 클래스 정보 표시
+        var selectedClass = this.value;
+        document.getElementById(selectedClass + '-info').style.display = 'block';
+    });
+</script>
+{% endblock %}

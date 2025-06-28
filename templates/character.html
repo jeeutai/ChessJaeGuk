@@ -1,0 +1,197 @@
+{% extends 'layout.html' %}
+
+{% block title %}캐릭터 - {{ system_config.get('app_name', '체스제국') }}{% endblock %}
+
+{% block content %}
+<div class="character-page">
+    <!-- 내 캐릭터 정보 -->
+    <div class="character-info">
+        <div class="character-avatar">
+            <i class="{{ class_info.icon }} fa-3x"></i>
+        </div>
+        <div class="character-details">
+            <h2>{{ character.name }}</h2>
+            <p class="class-name">{{ class_info.name }} Lv.{{ character.level }}</p>
+            <div class="status-bars">
+                <div class="hp-bar">
+                    <div class="bar-fill" style="width: {{ (character.current_hp / character.max_hp * 100)|round }}%">
+                        HP: {{ character.current_hp }}/{{ character.max_hp }}
+                    </div>
+                </div>
+                <div class="mp-bar">
+                    <div class="bar-fill" style="width: {{ (character.current_mp / character.max_mp * 100)|round }}%">
+                        MP: {{ character.current_mp }}/{{ character.max_mp }}
+                    </div>
+                </div>
+            </div>
+            <div class="character-stats">
+                <p>전투력: {{ character.power }}</p>
+                <p>체력: {{ character.vitality }}</p>
+                <p>민첩: {{ character.agility }}</p>
+                <p>지능: {{ character.intelligence }}</p>
+                <p>전적: {{ character.wins }}승 {{ character.losses }}패</p>
+            </div>
+            <div class="character-actions">
+                <a href="{{ url_for('character.profile') }}" class="btn btn-info">프로필</a>
+                <a href="{{ url_for('character.history') }}" class="btn btn-secondary">전투 기록</a>
+                {% if not in_battle %}
+                <a href="{{ url_for('character.class_change') }}" class="btn btn-warning">전직</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 전투 상대 목록 -->
+    {% if not in_battle %}
+    <div class="opponents-list">
+        <h3>전투 상대</h3>
+        <div class="opponents-grid">
+            {% for opponent in opponents %}
+            <div class="opponent-card">
+                <div class="opponent-avatar">
+                    <i class="{{ opponent.class_info.icon }} fa-2x"></i>
+                </div>
+                <div class="opponent-info">
+                    <h4>{{ opponent.name }}</h4>
+                    <p>{{ opponent.class_info.name }} Lv.{{ opponent.level }}</p>
+                    <p>전투력: {{ opponent.power }}</p>
+                    <p>승률: {{ opponent.win_rate }}%</p>
+                    <a href="{{ url_for('character.battle_start', opponent_id=opponent.id) }}" class="btn btn-danger">전투</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="battle-in-progress">
+        <h3>전투 진행 중</h3>
+        <p>현재 전투가 진행 중입니다.</p>
+        <a href="{{ url_for('character.battle') }}" class="btn btn-primary">전투 화면으로</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.character-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.character-info {
+    display: flex;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.character-avatar {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-right: 20px;
+}
+
+.character-details {
+    flex: 1;
+}
+
+.status-bars {
+    margin: 15px 0;
+}
+
+.hp-bar, .mp-bar {
+    height: 25px;
+    background: #eee;
+    border-radius: 5px;
+    margin: 5px 0;
+    overflow: hidden;
+}
+
+.hp-bar .bar-fill {
+    height: 100%;
+    background: #28a745;
+    color: white;
+    text-align: center;
+    line-height: 25px;
+    transition: width 0.3s ease;
+}
+
+.mp-bar .bar-fill {
+    height: 100%;
+    background: #007bff;
+    color: white;
+    text-align: center;
+    line-height: 25px;
+    transition: width 0.3s ease;
+}
+
+.character-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.character-actions {
+    margin-top: 20px;
+}
+
+.opponents-list {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.opponents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.opponent-card {
+    display: flex;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.opponent-card:hover {
+    transform: translateY(-5px);
+}
+
+.opponent-avatar {
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    margin-right: 15px;
+}
+
+.opponent-info {
+    flex: 1;
+}
+
+.battle-in-progress {
+    text-align: center;
+    padding: 40px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.btn {
+    margin: 5px;
+}
+
+.class-name {
+    color: #6c757d;
+    font-size: 1.1em;
+    margin: 5px 0;
+}
+</style>
+{% endblock %}

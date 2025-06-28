@@ -1,0 +1,179 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="register-container">
+    <div class="card shadow-lg mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-primary text-white text-center py-3">
+            <h2 class="mb-0">
+                <i class="fas fa-user-plus me-2"></i>체스제국 회원가입
+            </h2>
+        </div>
+        <div class="card-body p-4">
+            <form method="post" action="{{ url_for('auth.register') }}" id="registerForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">아이디</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="form-text">영문과 숫자로 4~20자 이내로 입력해주세요.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">비밀번호</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="form-text">6자 이상의 비밀번호를 입력해주세요.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password_confirm" class="form-label">비밀번호 확인</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password_confirm" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="nickname" class="form-label">닉네임</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-id-badge"></i></span>
+                        <input type="text" class="form-control" id="nickname" name="nickname" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">이메일</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">전화번호</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="01012345678" required>
+                        <button type="button" class="btn btn-outline-primary" id="verifyPhone">인증</button>
+                    </div>
+                    <div class="form-text">'-' 없이 입력해주세요.</div>
+                </div>
+                
+                <div class="mb-3 phone-verification" id="phoneVerification" style="display: none;">
+                    <label for="verification_code" class="form-label">인증번호</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="verification_code" placeholder="인증번호 6자리">
+                        <button type="button" class="btn btn-success" id="confirmVerification">확인</button>
+                    </div>
+                    <div class="form-text text-danger">인증번호가 발송되었습니다. 3분 이내에 입력해주세요.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="birth_date" class="form-label">생년월일</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        <input type="text" class="form-control" id="birth_date" name="birth_date" placeholder="예) 130101" required>
+                    </div>
+                    <div class="form-text">주민등록번호 앞 6자리를 입력해주세요.</div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="agree_terms" required>
+                    <label class="form-check-label" for="agree_terms">이용약관 및 개인정보 처리방침에 동의합니다.</label>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">회원가입</button>
+                </div>
+            </form>
+            
+            <div class="text-center mt-4">
+                <p>이미 계정이 있으신가요? <a href="{{ url_for('auth.login') }}" class="text-decoration-none">로그인</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 폼 유효성 검사
+    const registerForm = document.getElementById('registerForm');
+    const password = document.getElementById('password');
+    const passwordConfirm = document.getElementById('password_confirm');
+    const verifyPhone = document.getElementById('verifyPhone');
+    const phoneVerification = document.getElementById('phoneVerification');
+    const confirmVerification = document.getElementById('confirmVerification');
+    
+    // 비밀번호 확인
+    passwordConfirm.addEventListener('input', function() {
+        if (password.value !== passwordConfirm.value) {
+            passwordConfirm.setCustomValidity('비밀번호가 일치하지 않습니다.');
+        } else {
+            passwordConfirm.setCustomValidity('');
+        }
+    });
+    
+    // 전화번호 인증 (모의)
+    verifyPhone.addEventListener('click', function() {
+        const phone = document.getElementById('phone').value;
+        if (phone.length < 10) {
+            showToast('올바른 전화번호를 입력해주세요.', 'error');
+            return;
+        }
+        
+        // 실제로는 서버에서 SMS 발송 처리
+        phoneVerification.style.display = 'block';
+        showToast('인증번호가 발송되었습니다.', 'info');
+    });
+    
+    // 인증번호 확인 (모의)
+    confirmVerification.addEventListener('click', function() {
+        const code = document.getElementById('verification_code').value;
+        if (code.length === 6) {
+            showToast('인증이 완료되었습니다.', 'success');
+            phoneVerification.innerHTML = '<div class="alert alert-success mt-2">인증 완료</div>';
+        } else {
+            showToast('올바른 인증번호를 입력해주세요.', 'error');
+        }
+    });
+    
+    // 폼 제출 전 확인
+    registerForm.addEventListener('submit', function(e) {
+        if (password.value !== passwordConfirm.value) {
+            e.preventDefault();
+            showToast('비밀번호가 일치하지 않습니다.', 'error');
+        }
+    });
+});
+
+// 토스트 알림 표시
+function showToast(message, type) {
+    const toastContainer = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'info' ? 'info' : 'success'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+</script>
+{% endblock %}

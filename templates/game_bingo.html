@@ -1,0 +1,1086 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+    .game-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .bingo-game {
+        background-color: #3949ab;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        margin-bottom: 20px;
+        position: relative;
+    }
+    
+    .bingo-title {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .bingo-title span {
+        display: inline-block;
+        background-color: #fff;
+        color: #3949ab;
+        font-size: 2rem;
+        font-weight: bold;
+        padding: 5px 15px;
+        border-radius: 10px;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        margin: 0 5px;
+    }
+    
+    .balance-display {
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    .bingo-board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        max-width: 500px;
+        margin: 0 auto 30px;
+    }
+    
+    .bingo-cell {
+        background-color: white;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #3949ab;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+    }
+    
+    .bingo-cell:hover:not(.marked):not(.free) {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .bingo-cell.marked {
+        background-color: #ef5350;
+        color: white;
+        transform: rotate(3deg);
+        animation: marking 0.3s ease;
+    }
+    
+    .bingo-cell.bingo-line {
+        animation: bingo-line 1s infinite alternate;
+    }
+    
+    .bingo-cell.free {
+        background-color: #ffb300;
+        color: #fff;
+        font-size: 1rem;
+    }
+    
+    @keyframes marking {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1) rotate(5deg); }
+        100% { transform: scale(1) rotate(3deg); }
+    }
+    
+    @keyframes bingo-line {
+        0% { background-color: #ef5350; box-shadow: 0 0 10px #ef5350; }
+        100% { background-color: #ffb300; box-shadow: 0 0 20px #ffb300; }
+    }
+    
+    .number-display {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .number-display h4 {
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 15px;
+    }
+    
+    .drawn-number {
+        background-color: #fff;
+        color: #3949ab;
+        font-size: 2.5rem;
+        font-weight: bold;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    .number-history {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        max-width: 600px;
+        margin: 15px auto;
+    }
+    
+    .history-number {
+        background-color: rgba(255,255,255,0.3);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .bet-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .btn-bingo {
+        background-color: #ef5350;
+        color: white;
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        border-radius: 50px;
+        border: none;
+        box-shadow: 0 4px 0 #b71c1c;
+        transition: all 0.2s;
+        font-weight: bold;
+    }
+    
+    .btn-bingo:hover {
+        background-color: #e53935;
+        transform: translateY(-2px);
+    }
+    
+    .btn-bingo:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #b71c1c;
+    }
+    
+    .btn-bingo:disabled {
+        background-color: #bdbdbd;
+        box-shadow: 0 4px 0 #757575;
+        cursor: not-allowed;
+    }
+    
+    .result-message {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px auto;
+        max-width: 400px;
+        display: none;
+    }
+    
+    .result-message.win {
+        background-color: #4caf50;
+    }
+    
+    .result-message.lose {
+        background-color: #f44336;
+    }
+    
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    
+    .progress-bar-container {
+        background-color: rgba(255,255,255,0.2);
+        border-radius: 10px;
+        height: 20px;
+        width: 100%;
+        max-width: 500px;
+        margin: 20px auto 0;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background-color: #ff5722;
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-label {
+        text-align: center;
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .game-status {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 1.2rem;
+        color: rgba(255,255,255,0.9);
+        font-weight: bold;
+    }
+    
+    .prize-info {
+        text-align: center;
+        margin: 20px 0;
+        color: rgba(255,255,255,0.9);
+        background-color: rgba(0,0,0,0.2);
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 500px;
+        margin: 0 auto 20px;
+    }
+    
+    .prize-info h4 {
+        margin-bottom: 10px;
+        color: #ffb300;
+    }
+    
+    .prize-table {
+        width: 100%;
+        color: white;
+        font-size: 0.9rem;
+    }
+    
+    .prize-table td {
+        padding: 5px 10px;
+    }
+    
+    .payout-value {
+        font-weight: bold;
+        color: #ffb300;
+    }
+    
+    .statistics {
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .statistics h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .rules-section {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .rules-section h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    
+    .rule-item {
+        margin-bottom: 10px;
+    }
+    
+    #bingo-button {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #bingo-button.bingo-win::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+        animation: ripple 1s linear infinite;
+    }
+    
+    @keyframes ripple {
+        0% { transform: scale(0.3); opacity: 1; }
+        100% { transform: scale(1); opacity: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0"><i class="fas fa-th-large me-2"></i>빙고 게임</h2>
+            <a href="{{ url_for('games.index') }}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>게임 목록
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>빙고판에서 숫자를 선택하고 추첨된 숫자와 일치하면 표시됩니다. 한 줄이 완성되면 빙고 버튼을 눌러 상금을 획득하세요!
+            </div>
+            
+            <div class="bingo-game">
+                <div class="text-center">
+                    <div class="balance-display">
+                        <i class="fas fa-coins me-2"></i>현재 잔액: <span id="balance">{{ g.user.balance }}</span>{{ currency_name }}
+                    </div>
+                </div>
+                
+                <div class="bingo-title">
+                    <span>B</span>
+                    <span>I</span>
+                    <span>N</span>
+                    <span>G</span>
+                    <span>O</span>
+                </div>
+                
+                <div class="bingo-board" id="bingo-board">
+                    <!-- 빙고판은 자바스크립트로 동적 생성 -->
+                </div>
+                
+                <div class="number-display">
+                    <h4>추첨된 숫자</h4>
+                    <div class="drawn-number" id="current-number">-</div>
+                    <div class="number-history" id="number-history">
+                        <!-- 추첨 기록은 자바스크립트로 동적 생성 -->
+                    </div>
+                </div>
+                
+                <div class="prize-info">
+                    <h4>상금 정보</h4>
+                    <table class="prize-table">
+                        <tr>
+                            <td>1줄 빙고</td>
+                            <td class="payout-value">베팅액의 2배</td>
+                        </tr>
+                        <tr>
+                            <td>2줄 빙고</td>
+                            <td class="payout-value">베팅액의 5배</td>
+                        </tr>
+                        <tr>
+                            <td>3줄 빙고</td>
+                            <td class="payout-value">베팅액의 10배</td>
+                        </tr>
+                        <tr>
+                            <td>4줄 빙고</td>
+                            <td class="payout-value">베팅액의 20배</td>
+                        </tr>
+                        <tr>
+                            <td>5줄 빙고 (블랙아웃)</td>
+                            <td class="payout-value">베팅액의 50배</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="game-status" id="game-status">버튼을 눌러 게임을 시작하세요!</div>
+                
+                <div class="bet-controls">
+                    <button class="btn btn-outline-light" id="decrease-bet">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <div class="input-group" style="width: 200px;">
+                        <span class="input-group-text">배팅금액</span>
+                        <input type="number" class="form-control text-center" id="bet-amount" value="{{ min_bet }}" min="{{ min_bet }}" max="{{ max_bet }}">
+                        <span class="input-group-text">{{ currency_name }}</span>
+                    </div>
+                    <button class="btn btn-outline-light" id="increase-bet">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-bingo" id="start-button">
+                        <i class="fas fa-play me-2"></i>게임 시작
+                    </button>
+                    <button class="btn btn-bingo" id="draw-button" disabled>
+                        <i class="fas fa-random me-2"></i>숫자 추첨
+                    </button>
+                    <button class="btn btn-bingo" id="bingo-button" disabled>
+                        <i class="fas fa-trophy me-2"></i>빙고!
+                    </button>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="progress-label" id="progress-label">추첨 진행률: 0/75</div>
+                
+                <div class="result-message" id="result-message"></div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="rules-section">
+                        <h4><i class="fas fa-book me-2"></i>게임 규칙</h4>
+                        <div class="rule-item">
+                            <strong>게임 방법:</strong> 5×5 빙고판에서 추첨되는 숫자와 일치하면 해당 칸이 표시됩니다.
+                        </div>
+                        <div class="rule-item">
+                            <strong>빙고:</strong> 가로, 세로, 대각선으로 5개의 칸이 연속으로 표시되면 한 줄 빙고입니다.
+                        </div>
+                        <div class="rule-item">
+                            <strong>프리 스페이스:</strong> 중앙 칸은 항상 무료로 표시됩니다.
+                        </div>
+                        <div class="rule-item">
+                            <strong>승리 조건:</strong> 한 줄 이상의 빙고가 완성되면 "빙고" 버튼을 눌러 상금을 획득할 수 있습니다.
+                        </div>
+                        <div class="rule-item">
+                            <strong>상금:</strong> 한 게임에서 최대 5줄의 빙고를 달성할 수 있으며, 줄 수에 따라 상금이 달라집니다.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="statistics">
+                        <h4><i class="fas fa-chart-pie me-2"></i>내 게임 통계</h4>
+                        <div class="stat-item">
+                            <span>총 게임 수:</span>
+                            <span id="total-games">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>승리:</span>
+                            <span id="total-wins">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>패배:</span>
+                            <span id="total-losses">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>최다 빙고 줄 수:</span>
+                            <span id="max-lines">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>블랙아웃 횟수:</span>
+                            <span id="total-blackouts">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>최대 당첨금:</span>
+                            <span id="max-win">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 투자금:</span>
+                            <span id="total-bets">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 획득금:</span>
+                            <span id="total-returns">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>수익률:</span>
+                            <span id="roi">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 게임 결과 모달 -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalTitle">게임 결과</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center" id="resultModalBody">
+                <div id="resultIcon" class="mb-3" style="font-size: 48px;"></div>
+                <h4 id="resultMessage" class="mb-3"></h4>
+                <p id="resultDetails" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="playAgainBtn" data-bs-dismiss="modal">다시 플레이</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 게임 설정 및 변수
+        const boardSize = 5;
+        const minNumber = 1;
+        const maxNumber = 75;
+        const maxDraws = 40; // 한 게임당 최대 추첨 횟수
+        
+        const state = {
+            board: [],
+            drawnNumbers: [],
+            currentDrawIndex: 0,
+            bingoLines: 0,
+            bingoCompleted: false,
+            gamePhase: 'betting', // betting, playing, completed
+            currentBet: {{ min_bet }},
+            balance: {{ g.user.balance }},
+            minBet: {{ min_bet }},
+            maxBet: {{ max_bet }}
+        };
+        
+        // 게임 통계
+        const stats = {
+            totalGames: 0,
+            wins: 0,
+            losses: 0,
+            maxLines: 0,
+            blackouts: 0,
+            maxWin: 0,
+            totalBets: 0,
+            totalReturns: 0
+        };
+        
+        // DOM 요소
+        const bingoBoard = document.getElementById('bingo-board');
+        const currentNumberDisplay = document.getElementById('current-number');
+        const numberHistory = document.getElementById('number-history');
+        const startButton = document.getElementById('start-button');
+        const drawButton = document.getElementById('draw-button');
+        const bingoButton = document.getElementById('bingo-button');
+        const resultMessage = document.getElementById('result-message');
+        const gameStatus = document.getElementById('game-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressLabel = document.getElementById('progress-label');
+        const balanceDisplay = document.getElementById('balance');
+        const betAmount = document.getElementById('bet-amount');
+        const decreaseBet = document.getElementById('decrease-bet');
+        const increaseBet = document.getElementById('increase-bet');
+        
+        // 빙고판 생성
+        function createBingoBoard() {
+            // 기존 빙고판 초기화
+            bingoBoard.innerHTML = '';
+            state.board = [];
+            
+            // B(1-15), I(16-30), N(31-45), G(46-60), O(61-75) 컬럼 생성
+            const columns = [
+                getRandomNumbers(1, 15, 5),
+                getRandomNumbers(16, 30, 5),
+                getRandomNumbers(31, 45, 5),
+                getRandomNumbers(46, 60, 5),
+                getRandomNumbers(61, 75, 5)
+            ];
+            
+            // 5x5 보드 생성
+            for (let row = 0; row < boardSize; row++) {
+                let rowData = [];
+                
+                for (let col = 0; col < boardSize; col++) {
+                    let cellValue = columns[col][row];
+                    
+                    // 중앙 칸은 FREE
+                    if (row === 2 && col === 2) {
+                        cellValue = 'FREE';
+                    }
+                    
+                    // 셀 객체 생성
+                    const cell = {
+                        value: cellValue,
+                        marked: cellValue === 'FREE', // FREE는 이미 표시됨
+                        row: row,
+                        col: col
+                    };
+                    
+                    rowData.push(cell);
+                    
+                    // 셀 DOM 요소 생성
+                    const cellElement = document.createElement('div');
+                    cellElement.className = 'bingo-cell' + (cell.marked ? ' marked free' : '');
+                    cellElement.textContent = cell.value;
+                    cellElement.dataset.row = row;
+                    cellElement.dataset.col = col;
+                    
+                    bingoBoard.appendChild(cellElement);
+                }
+                
+                state.board.push(rowData);
+            }
+            
+            // 모든 셀에 대한 클릭 이벤트 설정 (미리 생성하지만 실제 사용은 게임 중에만)
+            document.querySelectorAll('.bingo-cell').forEach(cell => {
+                cell.addEventListener('click', function() {
+                    // 이미 표시된 셀이거나 게임 중이 아닌 경우 무시
+                    if (cell.classList.contains('marked') || state.gamePhase !== 'playing') {
+                        return;
+                    }
+                    
+                    const row = parseInt(cell.dataset.row);
+                    const col = parseInt(cell.dataset.col);
+                    const cellValue = state.board[row][col].value;
+                    
+                    // 현재까지 추첨된 숫자 중에 있는지 확인
+                    if (state.drawnNumbers.includes(cellValue)) {
+                        // 표시하기
+                        cell.classList.add('marked');
+                        state.board[row][col].marked = true;
+                        
+                        // 빙고 라인 확인
+                        checkForBingo();
+                    }
+                });
+            });
+        }
+        
+        // 랜덤 숫자 배열 생성 (특정 범위에서 중복 없이)
+        function getRandomNumbers(min, max, count) {
+            const numbers = [];
+            
+            while (numbers.length < count) {
+                const num = Math.floor(Math.random() * (max - min + 1)) + min;
+                if (!numbers.includes(num)) {
+                    numbers.push(num);
+                }
+            }
+            
+            return numbers;
+        }
+        
+        // 숫자 추첨
+        function drawNumber() {
+            if (state.currentDrawIndex >= maxDraws) {
+                endGame(false, '더 이상 추첨할 숫자가 없습니다. 게임이 종료되었습니다.');
+                return;
+            }
+            
+            let randomNumber;
+            
+            // 이미 추첨된 숫자는 제외
+            do {
+                randomNumber = Math.floor(Math.random() * maxNumber) + minNumber;
+            } while (state.drawnNumbers.includes(randomNumber));
+            
+            state.drawnNumbers.push(randomNumber);
+            state.currentDrawIndex++;
+            
+            // 화면 업데이트
+            currentNumberDisplay.textContent = randomNumber;
+            
+            // 숫자 히스토리에 추가
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-number';
+            historyItem.textContent = randomNumber;
+            numberHistory.appendChild(historyItem);
+            
+            // 진행률 업데이트
+            updateProgressBar();
+            
+            // 자동 표시 (빙고판에서 해당 숫자 찾아 표시)
+            document.querySelectorAll('.bingo-cell').forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                if (
+                    row !== undefined && 
+                    col !== undefined && 
+                    state.board[row][col].value === randomNumber
+                ) {
+                    cell.classList.add('marked');
+                    state.board[row][col].marked = true;
+                }
+            });
+            
+            // 빙고 확인
+            checkForBingo();
+            
+            // 최대 추첨 횟수 도달 확인
+            if (state.currentDrawIndex >= maxDraws) {
+                drawButton.disabled = true;
+                gameStatus.textContent = '모든 숫자가 추첨되었습니다.';
+                
+                if (state.bingoLines === 0) {
+                    setTimeout(() => {
+                        endGame(false, '아쉽게도 빙고를 완성하지 못했습니다.');
+                    }, 1500);
+                }
+            }
+        }
+        
+        // 진행률 표시바 업데이트
+        function updateProgressBar() {
+            const percentage = (state.currentDrawIndex / maxDraws) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressLabel.textContent = `추첨 진행률: ${state.currentDrawIndex}/${maxDraws}`;
+        }
+        
+        // 빙고 라인 확인
+        function checkForBingo() {
+            // 이전 빙고 라인 표시 제거
+            document.querySelectorAll('.bingo-line').forEach(cell => {
+                cell.classList.remove('bingo-line');
+            });
+            
+            let bingoLines = 0;
+            const bingoLineCoords = [];
+            
+            // 가로 줄 체크
+            for (let row = 0; row < boardSize; row++) {
+                let isRowBingo = true;
+                for (let col = 0; col < boardSize; col++) {
+                    if (!state.board[row][col].marked) {
+                        isRowBingo = false;
+                        break;
+                    }
+                }
+                
+                if (isRowBingo) {
+                    bingoLines++;
+                    bingoLineCoords.push(...Array(boardSize).fill().map((_, col) => ({row, col})));
+                }
+            }
+            
+            // 세로 줄 체크
+            for (let col = 0; col < boardSize; col++) {
+                let isColBingo = true;
+                for (let row = 0; row < boardSize; row++) {
+                    if (!state.board[row][col].marked) {
+                        isColBingo = false;
+                        break;
+                    }
+                }
+                
+                if (isColBingo) {
+                    bingoLines++;
+                    bingoLineCoords.push(...Array(boardSize).fill().map((_, row) => ({row, col})));
+                }
+            }
+            
+            // 대각선 체크 (좌상단에서 우하단)
+            let isDiag1Bingo = true;
+            for (let i = 0; i < boardSize; i++) {
+                if (!state.board[i][i].marked) {
+                    isDiag1Bingo = false;
+                    break;
+                }
+            }
+            
+            if (isDiag1Bingo) {
+                bingoLines++;
+                bingoLineCoords.push(...Array(boardSize).fill().map((_, i) => ({row: i, col: i})));
+            }
+            
+            // 대각선 체크 (우상단에서 좌하단)
+            let isDiag2Bingo = true;
+            for (let i = 0; i < boardSize; i++) {
+                if (!state.board[i][boardSize - 1 - i].marked) {
+                    isDiag2Bingo = false;
+                    break;
+                }
+            }
+            
+            if (isDiag2Bingo) {
+                bingoLines++;
+                bingoLineCoords.push(...Array(boardSize).fill().map((_, i) => ({row: i, col: boardSize - 1 - i})));
+            }
+            
+            // 빙고 라인 표시
+            const uniqueCoords = bingoLineCoords.filter(
+                (coord, index, self) => 
+                    self.findIndex(c => c.row === coord.row && c.col === coord.col) === index
+            );
+            
+            uniqueCoords.forEach(coord => {
+                const cell = document.querySelector(`.bingo-cell[data-row="${coord.row}"][data-col="${coord.col}"]`);
+                if (cell) {
+                    cell.classList.add('bingo-line');
+                }
+            });
+            
+            // 빙고 라인 업데이트
+            state.bingoLines = bingoLines;
+            
+            // 빙고 버튼 활성화 (빙고가 있고 이전에 완료하지 않은 경우)
+            if (bingoLines > 0 && !state.bingoCompleted) {
+                bingoButton.disabled = false;
+                bingoButton.classList.add('bingo-win');
+                gameStatus.textContent = `${bingoLines}줄의 빙고가 완성되었습니다! 빙고 버튼을 누르세요!`;
+            } else {
+                bingoButton.classList.remove('bingo-win');
+            }
+        }
+        
+        // 게임 시작
+        function startGame() {
+            const bet = parseInt(betAmount.value);
+            
+            // 베팅 금액 유효성 검사
+            if (isNaN(bet) || bet < state.minBet || bet > state.maxBet) {
+                alert(`베팅 금액은 ${state.minBet}${currency_name}에서 ${state.maxBet}${currency_name} 사이어야 합니다.`);
+                return;
+            }
+            
+            if (bet > state.balance) {
+                alert('잔액이 부족합니다.');
+                return;
+            }
+            
+            // 게임 초기화
+            state.currentBet = bet;
+            state.balance -= bet;
+            state.drawnNumbers = [];
+            state.currentDrawIndex = 0;
+            state.bingoLines = 0;
+            state.bingoCompleted = false;
+            state.gamePhase = 'playing';
+            
+            // 통계 업데이트
+            stats.totalGames++;
+            stats.totalBets += bet;
+            
+            // 잔액 표시 업데이트
+            balanceDisplay.textContent = state.balance;
+            
+            // 빙고판 생성
+            createBingoBoard();
+            
+            // 히스토리 초기화
+            numberHistory.innerHTML = '';
+            currentNumberDisplay.textContent = '-';
+            
+            // 진행률 초기화
+            progressBar.style.width = '0%';
+            progressLabel.textContent = `추첨 진행률: 0/${maxDraws}`;
+            
+            // 메시지 및 버튼 상태 업데이트
+            resultMessage.style.display = 'none';
+            gameStatus.textContent = '숫자 추첨 버튼을 클릭하여 게임을 진행하세요!';
+            startButton.disabled = true;
+            drawButton.disabled = false;
+            bingoButton.disabled = true;
+            
+            // 자동으로 첫 번째 숫자 추첨
+            drawNumber();
+        }
+        
+        // 빙고 완료 (승리)
+        function completeBingo() {
+            if (state.bingoLines === 0 || state.bingoCompleted) {
+                return;
+            }
+            
+            state.bingoCompleted = true;
+            bingoButton.disabled = true;
+            
+            // 승리 금액 계산
+            let multiplier = 0;
+            switch(state.bingoLines) {
+                case 1: multiplier = 2; break;
+                case 2: multiplier = 5; break;
+                case 3: multiplier = 10; break;
+                case 4: multiplier = 20; break;
+                case 5: // 모든 라인 (블랙아웃)
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                    multiplier = 50; 
+                    stats.blackouts++;
+                    break;
+                default: multiplier = state.bingoLines * 2; // 혹시 모를 경우를 위한 기본값
+            }
+            
+            const winAmount = state.currentBet * multiplier;
+            
+            // 게임 종료
+            endGame(true, `축하합니다! ${state.bingoLines}줄의 빙고로 ${state.currentBet}${currency_name}의 ${multiplier}배인 ${winAmount}${currency_name}을 획득했습니다!`, winAmount);
+            
+            // 통계 업데이트
+            if (state.bingoLines > stats.maxLines) {
+                stats.maxLines = state.bingoLines;
+            }
+        }
+        
+        // 게임 종료
+        function endGame(isWin, message, winAmount = 0) {
+            state.gamePhase = 'completed';
+            
+            // 버튼 상태 업데이트
+            drawButton.disabled = true;
+            bingoButton.disabled = true;
+            startButton.disabled = false;
+            startButton.innerHTML = '<i class="fas fa-redo me-2"></i>다시 시작';
+            
+            // 결과 메시지 표시
+            resultMessage.textContent = message;
+            resultMessage.className = `result-message ${isWin ? 'win' : 'lose'}`;
+            resultMessage.style.display = 'block';
+            
+            // 게임 상태 업데이트
+            gameStatus.textContent = isWin ? '축하합니다! 빙고를 완성했습니다!' : '게임이 종료되었습니다.';
+            
+            // 통계 업데이트
+            if (isWin) {
+                stats.wins++;
+                state.balance += winAmount;
+                stats.totalReturns += winAmount;
+                
+                if (winAmount > stats.maxWin) {
+                    stats.maxWin = winAmount;
+                }
+            } else {
+                stats.losses++;
+            }
+            
+            // 잔액 업데이트
+            balanceDisplay.textContent = state.balance;
+            
+            // 통계 화면 업데이트
+            updateStatistics();
+            
+            // 서버에 결과 저장
+            saveGameResult(state.currentBet, isWin ? 'win' : 'lose', winAmount);
+            
+            // 결과 모달 표시
+            showResultModal(isWin, message, winAmount);
+        }
+        
+        // 결과 모달 표시
+        function showResultModal(isWin, message, winAmount) {
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultIcon = document.getElementById('resultIcon');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultModalTitle = document.getElementById('resultModalTitle');
+            
+            if (isWin) {
+                resultModalTitle.textContent = '축하합니다!';
+                resultIcon.innerHTML = '🎉';
+                resultMessage.textContent = `${state.bingoLines}줄의 빙고를 달성했습니다!`;
+                resultDetails.textContent = `${state.currentBet}${currency_name}의 배당금으로 ${winAmount}${currency_name}을 획득했습니다!`;
+            } else {
+                resultModalTitle.textContent = '아쉽네요';
+                resultIcon.innerHTML = '😢';
+                resultMessage.textContent = '이번에는 빙고를 달성하지 못했습니다.';
+                resultDetails.textContent = `${state.currentBet}${currency_name}을 잃었습니다. 다시 도전해보세요!`;
+            }
+            
+            document.getElementById('playAgainBtn').onclick = function() {
+                resetGame();
+            };
+            
+            resultModal.show();
+        }
+        
+        // 게임 재설정
+        function resetGame() {
+            state.gamePhase = 'betting';
+            startButton.innerHTML = '<i class="fas fa-play me-2"></i>게임 시작';
+            gameStatus.textContent = '버튼을 눌러 게임을 시작하세요!';
+            resultMessage.style.display = 'none';
+            
+            // 빙고판 초기화
+            createBingoBoard();
+            
+            // 히스토리 초기화
+            numberHistory.innerHTML = '';
+            currentNumberDisplay.textContent = '-';
+            
+            // 진행률 초기화
+            progressBar.style.width = '0%';
+            progressLabel.textContent = `추첨 진행률: 0/${maxDraws}`;
+        }
+        
+        // 서버에 게임 결과 저장
+        function saveGameResult(betAmount, result, winAmount) {
+            // AJAX 요청으로 서버에 결과 전송
+            fetch('{{ url_for("games.place_bet") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'game_id': 'bingo',
+                    'bet_amount': betAmount,
+                    'result': result,
+                    'win_amount': winAmount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('결과 저장 실패:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('오류 발생:', error);
+            });
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            document.getElementById('total-games').textContent = stats.totalGames;
+            document.getElementById('total-wins').textContent = stats.wins;
+            document.getElementById('total-losses').textContent = stats.losses;
+            document.getElementById('max-lines').textContent = stats.maxLines;
+            document.getElementById('total-blackouts').textContent = stats.blackouts;
+            document.getElementById('max-win').textContent = `${stats.maxWin}${currency_name}`;
+            document.getElementById('total-bets').textContent = `${stats.totalBets}${currency_name}`;
+            document.getElementById('total-returns').textContent = `${stats.totalReturns}${currency_name}`;
+            
+            // ROI 계산 (Return on Investment)
+            const roi = stats.totalBets > 0 ? ((stats.totalReturns - stats.totalBets) / stats.totalBets * 100).toFixed(2) : '0.00';
+            document.getElementById('roi').textContent = `${roi}%`;
+        }
+        
+        // 배팅 금액 제어
+        decreaseBet.addEventListener('click', function() {
+            let currentBet = parseInt(betAmount.value);
+            if (currentBet > state.minBet) {
+                betAmount.value = currentBet - 100;
+            }
+        });
+        
+        increaseBet.addEventListener('click', function() {
+            let currentBet = parseInt(betAmount.value);
+            if (currentBet < state.maxBet && currentBet < state.balance) {
+                betAmount.value = currentBet + 100;
+            }
+        });
+        
+        betAmount.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            if (value < state.minBet) this.value = state.minBet;
+            if (value > state.maxBet) this.value = state.maxBet;
+            if (value > state.balance) this.value = state.balance;
+        });
+        
+        // 이벤트 리스너
+        startButton.addEventListener('click', startGame);
+        drawButton.addEventListener('click', drawNumber);
+        bingoButton.addEventListener('click', completeBingo);
+        
+        // 초기 빙고판 생성
+        createBingoBoard();
+    });
+</script>
+{% endblock %}

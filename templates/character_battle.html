@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}캐릭터 배틀 - {{ system_config.get('app_name', '체스제국') }}{% endblock %}
+
+{% block content %}
+<div class="battle-container">
+    {% if my_character and opponent %}
+        <!-- 전투 화면 -->
+        <div class="battle-screen">
+            <!-- 내 캐릭터 정보 -->
+            <div class="character-card my-character">
+                <div class="character-avatar">
+                    <i class="fas fa-user fa-2x"></i>
+                </div>
+                <div class="character-info">
+                    <h2>{{ my_character.get('name', '캐릭터') }}</h2>
+                    <p>Lv.{{ my_character.get('level', '1') }} {{ my_character.get('class', '').capitalize() }}</p>
+                      <!-- HP 바 -->
+                    <div class="hp-bar">
+                        {% if my_character.current_hp is defined and my_character.max_hp is defined %}
+                            <div class="hp-fill" style="width: {{ (my_character.current_hp / my_character.max_hp * 100)|round }}%">
+                                HP: {{ my_character.current_hp }}/{{ my_character.max_hp }}
+                            </div>
+                        {% else %}
+                            <div class="hp-fill" style="width: 100%">
+                                HP: {{ my_character.get('hp', '???') }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- MP 바 -->
+                    <div class="mp-bar">
+                        {% if my_character.current_mp is defined and my_character.max_mp is defined %}
+                            <div class="mp-fill" style="width: {{ (my_character.current_mp / my_character.max_mp * 100)|round }}%">
+                                MP: {{ my_character.current_mp }}/{{ my_character.max_mp }}
+                            </div>
+                        {% else %}
+                            <div class="mp-fill" style="width: 100%">
+                                MP: {{ my_character.get('mp', '100') }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <p>전투력: {{ my_character.get('power', '0') }}</p>
+                    <p>전적: {{ my_character.get('wins', '0') }}승 {{ my_character.get('losses', '0') }}패</p>
+                </div>
+            </div>
+
+            <!-- VS 표시 -->
+            <div class="vs-display">
+                <h1>VS</h1>
+            </div>
+
+            <!-- 상대 캐릭터 정보 -->
+            <div class="character-card opponent">
+                <div class="character-avatar">
+                    <i class="fas fa-user-ninja fa-2x"></i>
+                </div>
+                <div class="character-info">
+                    <h2>{{ opponent.get('name', '상대') }}</h2>
+                    <p>Lv.{{ opponent.get('level', '1') }} {{ opponent.get('class', '').capitalize() }}</p>
+                      <!-- HP 바 -->
+                    <div class="hp-bar">
+                        {% if opponent.current_hp is defined and opponent.max_hp is defined %}
+                            <div class="hp-fill" style="width: {{ (opponent.current_hp / opponent.max_hp * 100)|round }}%">
+                                HP: {{ opponent.current_hp }}/{{ opponent.max_hp }}
+                            </div>
+                        {% else %}
+                            <div class="hp-fill" style="width: 100%">
+                                HP: {{ opponent.get('hp', '???') }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <p>전투력: {{ opponent.get('power', '0') }}</p>
+                    <p>전적: {{ opponent.get('wins', '0') }}승 {{ opponent.get('losses', '0') }}패</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 전투 로그 -->
+        <div class="battle-log">
+            <h3>전투 기록</h3>
+            <div class="log-container">
+                {% if battle_rounds %}
+                    {% for round in battle_rounds|reverse %}
+                        <div class="log-entry {% if round.is_critical %}critical{% endif %} {% if round.is_dodged %}dodge{% endif %}">
+                            <p>{{ round.attacker_action }}</p>
+                            <p>{{ round.defender_action }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>전투가 시작됐습니다!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 전투 컨트롤 -->
+        <div class="battle-controls">
+            <form action="{{ url_for('character.attack') }}" method="post">
+                <!-- 기본 공격 -->
+                <button type="submit" class="attack-btn">기본 공격</button>
+                
+                <!-- 스킬 목록 -->
+                {% if my_skills %}
+                    <div class="skills-list">
+                        {% for skill in my_skills %}
+                            <button type="submit" name="skill_id" value="{{ skill.id }}" 
+                                    class="skill-btn" {% if my_character.current_mp < skill.mp_cost %}disabled{% endif %}>
+                                {{ skill.name }}
+                                <span class="mp-cost">(MP: {{ skill.mp_cost }})</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    {% else %}
+        <!-- 상대 선택 화면 -->
+        <div class="character-selection">
+            <h2>전투 상대 선택</h2>
+            {% if opponents %}
+                <div class="opponents-list">
+                    {% for opponent in opponents %}
+                        <div class="opponent-card">
+                            <div class="opponent-info">
+                                <h3>{{ opponent.name }}</h3>
+                                <p>Lv.{{ opponent.level }} {{ opponent.class }}</p>
+                                <div class="opponent-stats">
+                                    <div class="opponent-stat">
+                                        <span>전투력:</span>
+                                        <span>{{ opponent.power }}</span>
+                                    </div>
+                                    <div class="opponent-stat">
+                                        <span>전적:</span>
+                                        <span>{{ opponent.wins }}승 {{ opponent.losses }}패</span>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('character.battle_start', opponent_id=opponent.id) }}" class="battle-btn">전투 시작</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-opponents">
+                    <p>현재 배틀 가능한 상대가 없습니다.</p>
+                    <p>다른 사용자들이 캐릭터를 생성하면 이곳에 표시됩니다.</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="character-actions" style="margin-top: 20px;">
+        <a href="{{ url_for('character.index') }}" class="btn">캐릭터 정보로 돌아가기</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.battle-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.battle-screen {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.character-card {
+    flex: 1;
+    padding: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 0 10px;
+}
+
+.character-avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #3f51b5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin: 0 auto 15px;
+}
+
+.vs-display {
+    margin: 0 20px;
+    font-size: 2em;
+    font-weight: bold;
+    color: #ff4444;
+}
+
+.hp-bar, .mp-bar {
+    width: 100%;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+.hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ff6b6b);
+    transition: width 0.3s ease;
+    text-align: center;
+    color: white;
+    line-height: 20px;
+}
+
+.mp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4444ff, #6b6bff);
+    transition: width 0.3s ease;
+    text-align: center;
+    color: white;
+    line-height: 20px;
+}
+
+.battle-log {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.log-container {
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.log-entry {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
+}
+
+.log-entry.critical {
+    color: #ff4444;
+    font-weight: bold;
+}
+
+.log-entry.dodge {
+    color: #44ff44;
+    font-style: italic;
+}
+
+.battle-controls {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.attack-btn, .skill-btn {
+    padding: 12px 24px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.1em;
+}
+
+.attack-btn {
+    background: #ff4444;
+    color: white;
+}
+
+.skill-btn {
+    background: #4444ff;
+    color: white;
+}
+
+.skill-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.mp-cost {
+    font-size: 0.8em;
+    opacity: 0.8;
+}
+
+.opponents-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.opponent-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.opponent-info h3 {
+    margin: 0 0 10px 0;
+}
+
+.opponent-stats {
+    margin: 10px 0;
+}
+
+.opponent-stat {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.battle-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #44ff44;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.battle-btn:hover,
+.attack-btn:hover,
+.skill-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+.no-opponents {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.dark-mode .character-card,
+.dark-mode .opponent-card,
+.dark-mode .no-opponents {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.character-actions .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #666;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.character-actions .btn:hover {
+    background: #888;
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,247 @@
+/* 다크 모드 CSS */
+:root {
+  --primary-color: #3f51b5;
+  --secondary-color: #f50057;
+  --text-color: #212121;
+  --background-color: #ffffff;
+  --card-background: #f9f9f9;
+  --border-color: #e0e0e0;
+  --input-background: #ffffff;
+  --shadow-color: rgba(0,0,0,0.1);
+  --alert-info-bg: #d1ecf1;
+  --alert-success-bg: #d4edda;
+  --alert-warning-bg: #fff3cd;
+  --alert-danger-bg: #f8d7da;
+  --footer-background: #f8f9fa;
+  --nav-active-color: var(--primary-color);
+  --nav-inactive-color: #6c757d;
+}
+
+[data-theme="dark"] {
+  --primary-color: #5c6bc0;
+  --secondary-color: #ff4081;
+  --text-color: #f5f5f5;
+  --background-color: #121212;
+  --card-background: #1e1e1e;
+  --border-color: #424242;
+  --input-background: #2d2d2d;
+  --shadow-color: rgba(0,0,0,0.5);
+  --alert-info-bg: #273c47;
+  --alert-success-bg: #265f3b;
+  --alert-warning-bg: #513c06;
+  --alert-danger-bg: #5a1e1e;
+  --footer-background: #1a1a1a;
+  --nav-active-color: var(--secondary-color);
+  --nav-inactive-color: #b0b0b0;
+}
+
+/* 다크 모드 기본 스타일 */
+body[data-theme="dark"] {
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+/* 헤더 다크 모드 */
+body[data-theme="dark"] header.bg-primary {
+  background-color: #222 !important;
+}
+
+/* 카드 다크 모드 */
+body[data-theme="dark"] .card {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .card-header {
+  background-color: #333;
+  border-bottom-color: var(--border-color);
+}
+
+/* 입력 폼 다크 모드 */
+body[data-theme="dark"] .form-control,
+body[data-theme="dark"] .form-select {
+  background-color: var(--input-background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+body[data-theme="dark"] .form-control:focus,
+body[data-theme="dark"] .form-select:focus {
+  background-color: var(--input-background);
+  color: var(--text-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(92, 107, 192, 0.25);
+}
+
+/* 표 다크 모드 */
+body[data-theme="dark"] .table {
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+body[data-theme="dark"] .table-hover > tbody > tr:hover {
+  background-color: rgba(255, 255, 255, 0.075);
+}
+
+/* 알림 다크 모드 */
+body[data-theme="dark"] .alert-primary {
+  background-color: rgba(92, 107, 192, 0.2);
+  border-color: rgba(92, 107, 192, 0.3);
+  color: #b8c1ff;
+}
+
+body[data-theme="dark"] .alert-info {
+  background-color: var(--alert-info-bg);
+  border-color: #3d617b;
+  color: #9bd8eb;
+}
+
+body[data-theme="dark"] .alert-success {
+  background-color: var(--alert-success-bg);
+  border-color: #3d996c;
+  color: #a3e9c1;
+}
+
+body[data-theme="dark"] .alert-warning {
+  background-color: var(--alert-warning-bg);
+  border-color: #8a6d0c;
+  color: #ffe083;
+}
+
+body[data-theme="dark"] .alert-danger {
+  background-color: var(--alert-danger-bg);
+  border-color: #a13636;
+  color: #f8b9b9;
+}
+
+/* 버튼 다크 모드 */
+body[data-theme="dark"] .btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+body[data-theme="dark"] .btn-outline-primary:hover {
+  color: #fff;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* 하단 메뉴바 다크 모드 */
+body[data-theme="dark"] .bottom-nav {
+  background-color: #202020 !important;
+  border-top-color: var(--border-color) !important;
+}
+
+body[data-theme="dark"] .bottom-nav .nav-link {
+  color: var(--nav-inactive-color);
+}
+
+body[data-theme="dark"] .bottom-nav .nav-link.active {
+  color: var(--nav-active-color);
+}
+
+/* 토스트 알림 다크 모드 */
+body[data-theme="dark"] .toast {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+/* 모달 다크 모드 */
+body[data-theme="dark"] .modal-content {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+body[data-theme="dark"] .modal-footer {
+  border-top-color: var(--border-color);
+}
+
+/* 드롭다운 메뉴 다크 모드 */
+body[data-theme="dark"] .dropdown-menu {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+body[data-theme="dark"] .dropdown-item {
+  color: var(--text-color);
+}
+
+body[data-theme="dark"] .dropdown-item:hover,
+body[data-theme="dark"] .dropdown-item:focus {
+  background-color: #333;
+  color: #fff;
+}
+
+/* 뱃지 다크 모드 */
+body[data-theme="dark"] .badge.bg-secondary {
+  background-color: #555 !important;
+}
+
+/* 테마 스위치 스타일 */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--secondary-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.theme-icon {
+  color: #FFF;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.system-header {
+  background: linear-gradient(45deg, #1a237e, #0d47a1);
+}
+
+.config-key {
+  width: 30%;
+}

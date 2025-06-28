@@ -1,0 +1,342 @@
+{% extends 'layout.html' %}
+
+{% block title %}포인트 내역 - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+  .points-banner {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .history-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .history-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .history-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    position: relative;
+    font-weight: 500;
+  }
+  
+  .history-tab.active {
+    color: var(--primary-color);
+  }
+  
+  .history-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--primary-color);
+  }
+  
+  .history-list {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  
+  .history-item {
+    padding: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .history-item:last-child {
+    border-bottom: none;
+  }
+  
+  .history-item-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .history-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+  }
+  
+  .earn {
+    background-color: #28a745;
+  }
+  
+  .spend {
+    background-color: #dc3545;
+  }
+  
+  .history-details {
+    flex-grow: 1;
+  }
+  
+  .history-action {
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+  
+  .history-date {
+    font-size: 0.85rem;
+    color: #666;
+  }
+  
+  .history-points {
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  .earn-points {
+    color: #28a745;
+  }
+  
+  .spend-points {
+    color: #dc3545;
+  }
+  
+  .empty-history {
+    text-align: center;
+    padding: 30px;
+    color: #888;
+  }
+  
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .stat-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .earned {
+    color: #28a745;
+  }
+  
+  .spent {
+    color: #dc3545;
+  }
+  
+  .stat-label {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 768px) {
+    .history-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .history-points {
+      margin-top: 10px;
+    }
+    
+    .summary-stats {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="points-banner">
+    <h2>{{ user_points }} 포인트</h2>
+    <p>현재 레벨: {{ user_level.current.level }}. {{ user_level.current.name }}</p>
+    <a href="{{ url_for('rewards.index') }}" class="btn btn-outline-light mt-2">보상 상점으로 돌아가기</a>
+  </div>
+  
+  <!-- 포인트 요약 통계 -->
+  <div class="summary-stats">
+    {% set total_earned = 0 %}
+    {% set total_spent = 0 %}
+    {% set earned_count = 0 %}
+    {% set spent_count = 0 %}
+    
+    {% for log in points_logs %}
+      {% if log.direction == 'earn' %}
+        {% set total_earned = total_earned + log.points|int %}
+        {% set earned_count = earned_count + 1 %}
+      {% else %}
+        {% set total_spent = total_spent + log.points|int %}
+        {% set spent_count = spent_count + 1 %}
+      {% endif %}
+    {% endfor %}
+    
+    <div class="stat-card">
+      <div class="stat-value earned">+{{ total_earned }}</div>
+      <div class="stat-label">총 획득 포인트</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value spent">-{{ total_spent }}</div>
+      <div class="stat-label">총 사용 포인트</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ earned_count }}</div>
+      <div class="stat-label">포인트 획득 횟수</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-value">{{ spent_count }}</div>
+      <div class="stat-label">포인트 사용 횟수</div>
+    </div>
+  </div>
+  
+  <div class="history-container">
+    <div class="history-tabs">
+      <div class="history-tab active" data-tab="all">전체 내역</div>
+      <div class="history-tab" data-tab="earn">획득 내역</div>
+      <div class="history-tab" data-tab="spend">사용 내역</div>
+    </div>
+    
+    <!-- 전체 내역 -->
+    <div class="history-list active" id="all-tab">
+      {% if points_logs|length > 0 %}
+        {% for log in points_logs %}
+          <div class="history-item">
+            <div class="history-item-left">
+              <div class="history-icon {{ log.direction }}">
+                {% if log.direction == 'earn' %}
+                  <i class="fas fa-plus"></i>
+                {% else %}
+                  <i class="fas fa-minus"></i>
+                {% endif %}
+              </div>
+              <div class="history-details">
+                <div class="history-action">{{ log.action }}</div>
+                <div class="history-date">{{ log.timestamp }}</div>
+              </div>
+            </div>
+            <div class="history-points {{ log.direction }}-points">
+              {% if log.direction == 'earn' %}+{% else %}-{% endif %}{{ log.points }}P
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-history">
+          <i class="far fa-calendar-times fa-3x mb-3"></i>
+          <p>포인트 내역이 없습니다.</p>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- 획득 내역 -->
+    <div class="history-list" id="earn-tab" style="display: none;">
+      {% set earned_logs = points_logs|selectattr('direction', 'equalto', 'earn')|list %}
+      {% if earned_logs|length > 0 %}
+        {% for log in earned_logs %}
+          <div class="history-item">
+            <div class="history-item-left">
+              <div class="history-icon earn">
+                <i class="fas fa-plus"></i>
+              </div>
+              <div class="history-details">
+                <div class="history-action">{{ log.action }}</div>
+                <div class="history-date">{{ log.timestamp }}</div>
+              </div>
+            </div>
+            <div class="history-points earn-points">
+              +{{ log.points }}P
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-history">
+          <i class="far fa-calendar-times fa-3x mb-3"></i>
+          <p>포인트 획득 내역이 없습니다.</p>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- 사용 내역 -->
+    <div class="history-list" id="spend-tab" style="display: none;">
+      {% set spent_logs = points_logs|selectattr('direction', 'equalto', 'spend')|list %}
+      {% if spent_logs|length > 0 %}
+        {% for log in spent_logs %}
+          <div class="history-item">
+            <div class="history-item-left">
+              <div class="history-icon spend">
+                <i class="fas fa-minus"></i>
+              </div>
+              <div class="history-details">
+                <div class="history-action">{{ log.action }}</div>
+                <div class="history-date">{{ log.timestamp }}</div>
+              </div>
+            </div>
+            <div class="history-points spend-points">
+              -{{ log.points }}P
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-history">
+          <i class="far fa-calendar-times fa-3x mb-3"></i>
+          <p>포인트 사용 내역이 없습니다.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('.history-tab');
+  const tabContents = document.querySelectorAll('.history-list');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      // 모든 탭 비활성화
+      tabs.forEach(t => t.classList.remove('active'));
+      // 모든 탭 컨텐츠 숨기기
+      tabContents.forEach(c => c.style.display = 'none');
+      
+      // 클릭한 탭 활성화
+      this.classList.add('active');
+      // 해당 컨텐츠 표시
+      const tabName = this.getAttribute('data-tab');
+      document.getElementById(`${tabName}-tab`).style.display = 'block';
+    });
+  });
+});
+</script>
+{% endblock %}

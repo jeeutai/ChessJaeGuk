@@ -1,0 +1,1118 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+    .game-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .blackjack-table {
+        background-color: #056b1a;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .blackjack-table::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 15px;
+        border: 8px solid #7b432c;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        pointer-events: none;
+    }
+    
+    .dealer-area, .player-area {
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .area-label {
+        background-color: rgba(0,0,0,0.4);
+        color: white;
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    
+    .cards-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        min-height: 160px;
+    }
+    
+    .card {
+        width: 120px;
+        height: 160px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 5px;
+        font-weight: bold;
+        position: relative;
+        transition: transform 0.3s ease;
+    }
+    
+    .card.hidden {
+        background-image: repeating-linear-gradient(
+            45deg,
+            #b71c1c,
+            #b71c1c 10px,
+            #e53935 10px,
+            #e53935 20px
+        );
+    }
+    
+    .card.hidden .card-value, .card.hidden .card-suit {
+        visibility: hidden;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-top, .card-bottom {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px;
+    }
+    
+    .card-bottom {
+        transform: rotate(180deg);
+    }
+    
+    .card-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+        font-size: 30px;
+    }
+    
+    .card-value {
+        font-size: 24px;
+    }
+    
+    .card-suit {
+        font-size: 24px;
+    }
+    
+    .red {
+        color: #d32f2f;
+    }
+    
+    .black {
+        color: #212121;
+    }
+    
+    .score-display {
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-left: 15px;
+        font-weight: bold;
+    }
+    
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    
+    .action-btn {
+        padding: 10px 20px;
+        font-size: 1.1rem;
+        border-radius: 30px;
+        border: none;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .action-btn:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    }
+    
+    .action-btn:disabled {
+        background-color: #b0bec5;
+        color: #78909c;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .btn-hit {
+        background-color: #2196f3;
+    }
+    
+    .btn-stand {
+        background-color: #f44336;
+    }
+    
+    .btn-double {
+        background-color: #ff9800;
+    }
+    
+    .btn-deal {
+        background-color: #4caf50;
+    }
+    
+    .bet-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .balance-display {
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    .result-message {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px auto;
+        max-width: 400px;
+        display: none;
+    }
+    
+    .result-message.win {
+        background-color: #4caf50;
+    }
+    
+    .result-message.lose {
+        background-color: #f44336;
+    }
+    
+    .result-message.push {
+        background-color: #ff9800;
+    }
+    
+    .result-message.blackjack {
+        background-color: #9c27b0;
+    }
+    
+    .chip {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        border: 2px dashed rgba(255,255,255,0.5);
+        transition: all 0.2s;
+    }
+    
+    .chip:hover {
+        transform: scale(1.1);
+    }
+    
+    .chip.selected {
+        border: 2px solid white;
+        box-shadow: 0 0 10px rgba(255,255,255,0.7);
+    }
+    
+    .chip-100 {
+        background-color: #1976d2;
+    }
+    
+    .chip-500 {
+        background-color: #d32f2f;
+    }
+    
+    .chip-1000 {
+        background-color: #388e3c;
+    }
+    
+    .chip-5000 {
+        background-color: #7b1fa2;
+    }
+    
+    .chip-10000 {
+        background-color: #f57c00;
+    }
+    
+    .bet-amount {
+        background-color: rgba(0,0,0,0.5);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        min-width: 200px;
+        text-align: center;
+    }
+    
+    .game-status {
+        text-align: center;
+        margin-bottom: 20px;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .statistics {
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .statistics h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .rules-section {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .rules-section h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    
+    .rule-item {
+        margin-bottom: 10px;
+    }
+    
+    .card-text {
+        text-align: center;
+        font-weight: bold;
+        font-size: 32px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0"><i class="fas fa-crown me-2"></i>블랙잭</h2>
+            <a href="{{ url_for('games.index') }}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>게임 목록
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>카드의 합이 21에 가깝게 만들어 딜러를 이기는 게임입니다. 21을 초과하면 버스트(패배)합니다.
+            </div>
+            
+            <div class="blackjack-table">
+                <div class="text-center">
+                    <div class="balance-display">
+                        <i class="fas fa-coins me-2"></i>현재 잔액: <span id="balance">{{ g.user.balance }}</span>{{ currency_name }}
+                    </div>
+                </div>
+                
+                <div class="dealer-area">
+                    <div class="area-label">딜러</div>
+                    <span class="score-display">점수: <span id="dealer-score">0</span></span>
+                    <div class="cards-container" id="dealer-cards"></div>
+                </div>
+                
+                <div class="player-area">
+                    <div class="area-label">플레이어</div>
+                    <span class="score-display">점수: <span id="player-score">0</span></span>
+                    <div class="cards-container" id="player-cards"></div>
+                </div>
+                
+                <div class="result-message" id="result-message"></div>
+                
+                <div class="game-status" id="game-status">베팅 금액을 선택하고 시작 버튼을 누르세요!</div>
+                
+                <div class="bet-controls">
+                    <div class="chip chip-100" data-value="100">100</div>
+                    <div class="chip chip-500" data-value="500">500</div>
+                    <div class="chip chip-1000" data-value="1000">1K</div>
+                    <div class="chip chip-5000" data-value="5000">5K</div>
+                    <div class="chip chip-10000" data-value="10000">10K</div>
+                    <div class="bet-amount">베팅: <span id="bet-amount">0</span>{{ currency_name }}</div>
+                    <button class="btn btn-outline-light btn-sm" id="clear-bet">
+                        <i class="fas fa-times me-1"></i>초기화
+                    </button>
+                </div>
+                
+                <div class="actions">
+                    <button class="action-btn btn-deal" id="deal-btn">
+                        <i class="fas fa-play me-1"></i>게임 시작
+                    </button>
+                    <button class="action-btn btn-hit" id="hit-btn" disabled>
+                        <i class="fas fa-plus me-1"></i>히트
+                    </button>
+                    <button class="action-btn btn-stand" id="stand-btn" disabled>
+                        <i class="fas fa-hand-paper me-1"></i>스탠드
+                    </button>
+                    <button class="action-btn btn-double" id="double-btn" disabled>
+                        <i class="fas fa-coins me-1"></i>더블 다운
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="rules-section">
+                        <h4><i class="fas fa-book me-2"></i>게임 규칙</h4>
+                        <div class="rule-item">
+                            <strong>목표:</strong> 카드 합계가 21에 가까우면서 딜러보다 높은 합계를 가지는 것
+                        </div>
+                        <div class="rule-item">
+                            <strong>카드 값:</strong> 숫자 카드는 표시된 값, 페이스 카드(J, Q, K)는 10, 에이스(A)는 1 또는 11
+                        </div>
+                        <div class="rule-item">
+                            <strong>블랙잭:</strong> 처음 2장의 카드 합이 21인 경우 (A + 10,J,Q,K), 배팅액의 2.5배 획득
+                        </div>
+                        <div class="rule-item">
+                            <strong>히트:</strong> 추가 카드를 받음
+                        </div>
+                        <div class="rule-item">
+                            <strong>스탠드:</strong> 더 이상 카드를 받지 않고 현재 합계로 승부
+                        </div>
+                        <div class="rule-item">
+                            <strong>더블 다운:</strong> 베팅액을 두 배로 늘리고 카드를 한 장만 더 받음
+                        </div>
+                        <div class="rule-item">
+                            <strong>딜러 규칙:</strong> 딜러는 합계가 16 이하이면 반드시 히트, 17 이상이면 반드시 스탠드
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="statistics">
+                        <h4><i class="fas fa-chart-pie me-2"></i>내 게임 통계</h4>
+                        <div class="stat-item">
+                            <span>총 게임 수:</span>
+                            <span id="total-games">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>승리:</span>
+                            <span id="total-wins">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>패배:</span>
+                            <span id="total-losses">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>무승부:</span>
+                            <span id="total-pushes">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>블랙잭 횟수:</span>
+                            <span id="total-blackjacks">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>최대 당첨금:</span>
+                            <span id="max-win">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 투자금:</span>
+                            <span id="total-bets">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 획득금:</span>
+                            <span id="total-returns">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>수익률:</span>
+                            <span id="roi">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 게임 결과 모달 -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalTitle">게임 결과</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center" id="resultModalBody">
+                <div id="resultIcon" class="mb-3" style="font-size: 48px;"></div>
+                <h4 id="resultMessage" class="mb-3"></h4>
+                <p id="resultDetails" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="playAgainBtn" data-bs-dismiss="modal">다시 플레이</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 게임 상태 및 데이터
+        const state = {
+            deck: [],
+            dealerCards: [],
+            playerCards: [],
+            dealerScore: 0,
+            playerScore: 0,
+            dealerHiddenCard: null,
+            currentBet: 0,
+            balance: {{ g.user.balance }},
+            gamePhase: 'betting', // betting, dealing, player-turn, dealer-turn, game-over
+            minBet: {{ min_bet }},
+            maxBet: {{ max_bet }}
+        };
+        
+        // 게임 통계
+        const stats = {
+            totalGames: 0,
+            wins: 0,
+            losses: 0,
+            pushes: 0,
+            blackjacks: 0,
+            maxWin: 0,
+            totalBets: 0,
+            totalReturns: 0
+        };
+        
+        // DOM 요소
+        const dealerCardsContainer = document.getElementById('dealer-cards');
+        const playerCardsContainer = document.getElementById('player-cards');
+        const dealerScoreDisplay = document.getElementById('dealer-score');
+        const playerScoreDisplay = document.getElementById('player-score');
+        const resultMessage = document.getElementById('result-message');
+        const gameStatus = document.getElementById('game-status');
+        const balanceDisplay = document.getElementById('balance');
+        const betAmountDisplay = document.getElementById('bet-amount');
+        const dealBtn = document.getElementById('deal-btn');
+        const hitBtn = document.getElementById('hit-btn');
+        const standBtn = document.getElementById('stand-btn');
+        const doubleBtn = document.getElementById('double-btn');
+        const chips = document.querySelectorAll('.chip');
+        const clearBetBtn = document.getElementById('clear-bet');
+        
+        // 카드 생성
+        function createDeck() {
+            const suits = ['♥', '♦', '♠', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            let deck = [];
+            
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({
+                        suit,
+                        value,
+                        color: (suit === '♥' || suit === '♦') ? 'red' : 'black'
+                    });
+                }
+            }
+            
+            return shuffleDeck(deck);
+        }
+        
+        // 카드 섞기
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+        
+        // 카드 가져오기
+        function drawCard(hidden = false) {
+            if (state.deck.length === 0) {
+                state.deck = createDeck();
+            }
+            
+            const card = state.deck.pop();
+            card.hidden = hidden;
+            return card;
+        }
+        
+        // 카드 값 계산
+        function getCardValue(card) {
+            if (card.value === 'A') return 11;
+            if (['K', 'Q', 'J'].includes(card.value)) return 10;
+            return parseInt(card.value);
+        }
+        
+        // 핸드 점수 계산
+        function calculateHandScore(cards) {
+            let score = 0;
+            let aces = 0;
+            
+            for (let card of cards) {
+                if (!card.hidden) {
+                    const value = getCardValue(card);
+                    if (card.value === 'A') aces++;
+                    score += value;
+                }
+            }
+            
+            // Ace 값 조정 (1 또는 11)
+            while (score > 21 && aces > 0) {
+                score -= 10; // 11에서 1로 변경 (차이 10)
+                aces--;
+            }
+            
+            return score;
+        }
+        
+        // 카드 렌더링
+        function renderCard(card, container) {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card' + (card.hidden ? ' hidden' : '');
+            
+            if (!card.hidden) {
+                const colorClass = card.color;
+                
+                const topValue = document.createElement('div');
+                topValue.className = `card-top ${colorClass}`;
+                topValue.innerHTML = `
+                    <span class="card-value">${card.value}</span>
+                    <span class="card-suit">${card.suit}</span>
+                `;
+                
+                const centerValue = document.createElement('div');
+                centerValue.className = `card-center ${colorClass}`;
+                centerValue.innerHTML = `<span class="card-suit">${card.suit}</span>`;
+                
+                const bottomValue = document.createElement('div');
+                bottomValue.className = `card-bottom ${colorClass}`;
+                bottomValue.innerHTML = `
+                    <span class="card-value">${card.value}</span>
+                    <span class="card-suit">${card.suit}</span>
+                `;
+                
+                cardElement.appendChild(topValue);
+                cardElement.appendChild(centerValue);
+                cardElement.appendChild(bottomValue);
+            } else {
+                const cardText = document.createElement('div');
+                cardText.className = 'card-text';
+                cardText.textContent = '?';
+                cardElement.appendChild(cardText);
+            }
+            
+            container.appendChild(cardElement);
+        }
+        
+        // 게임 초기화
+        function initGame() {
+            state.deck = createDeck();
+            clearTable();
+            updateGameStatus('베팅 금액을 선택하고 시작 버튼을 누르세요!');
+            dealBtn.disabled = state.currentBet < state.minBet;
+            hitBtn.disabled = true;
+            standBtn.disabled = true;
+            doubleBtn.disabled = true;
+            state.gamePhase = 'betting';
+        }
+        
+        // 테이블 초기화
+        function clearTable() {
+            dealerCardsContainer.innerHTML = '';
+            playerCardsContainer.innerHTML = '';
+            dealerScoreDisplay.textContent = '0';
+            playerScoreDisplay.textContent = '0';
+            resultMessage.style.display = 'none';
+            resultMessage.textContent = '';
+            resultMessage.className = 'result-message';
+        }
+        
+        // 게임 상태 업데이트
+        function updateGameStatus(message) {
+            gameStatus.textContent = message;
+        }
+        
+        // 게임 시작
+        function startGame() {
+            if (state.currentBet < state.minBet) {
+                alert(`최소 베팅 금액은 ${state.minBet}${currency_name}입니다.`);
+                return;
+            }
+            
+            if (state.currentBet > state.maxBet) {
+                alert(`최대 베팅 금액은 ${state.maxBet}${currency_name}입니다.`);
+                return;
+            }
+            
+            state.gamePhase = 'dealing';
+            stats.totalGames++;
+            stats.totalBets += state.currentBet;
+            
+            // 잔액에서 베팅 금액 차감
+            state.balance -= state.currentBet;
+            updateBalance();
+            
+            clearTable();
+            updateGameStatus('게임이 시작되었습니다. 카드를 확인하세요!');
+            
+            // 카드 초기화
+            state.dealerCards = [];
+            state.playerCards = [];
+            
+            // 카드 딜링 (플레이어, 딜러, 플레이어, 딜러(히든))
+            state.playerCards.push(drawCard());
+            renderCard(state.playerCards[0], playerCardsContainer);
+            
+            state.dealerCards.push(drawCard());
+            renderCard(state.dealerCards[0], dealerCardsContainer);
+            
+            state.playerCards.push(drawCard());
+            renderCard(state.playerCards[1], playerCardsContainer);
+            
+            state.dealerHiddenCard = drawCard(true);
+            state.dealerCards.push(state.dealerHiddenCard);
+            renderCard(state.dealerCards[1], dealerCardsContainer);
+            
+            // 점수 업데이트
+            state.playerScore = calculateHandScore(state.playerCards);
+            state.dealerScore = calculateHandScore(state.dealerCards);
+            
+            playerScoreDisplay.textContent = state.playerScore;
+            dealerScoreDisplay.textContent = state.dealerScore;
+            
+            // 버튼 상태 업데이트
+            dealBtn.disabled = true;
+            hitBtn.disabled = false;
+            standBtn.disabled = false;
+            doubleBtn.disabled = state.currentBet > state.balance;
+            
+            state.gamePhase = 'player-turn';
+            
+            // 블랙잭 확인
+            checkForBlackjack();
+        }
+        
+        // 블랙잭 확인
+        function checkForBlackjack() {
+            const playerHasBlackjack = state.playerScore === 21 && state.playerCards.length === 2;
+            
+            if (playerHasBlackjack) {
+                // 딜러의 히든 카드 공개
+                revealDealerCard();
+                
+                const dealerHasBlackjack = state.dealerScore === 21 && state.dealerCards.length === 2;
+                
+                if (dealerHasBlackjack) {
+                    // 무승부 (양쪽 다 블랙잭)
+                    endGame('push', '양쪽 모두 블랙잭! 베팅 금액을 돌려받습니다.');
+                } else {
+                    // 플레이어 블랙잭 승리
+                    stats.blackjacks++;
+                    const winAmount = state.currentBet * 2.5;
+                    endGame('blackjack', `블랙잭! ${state.currentBet}${currency_name}의 2.5배인 ${winAmount}${currency_name}을 획득했습니다!`, winAmount);
+                }
+            }
+        }
+        
+        // 히트 (카드 더 받기)
+        function hit() {
+            if (state.gamePhase !== 'player-turn') return;
+            
+            const newCard = drawCard();
+            state.playerCards.push(newCard);
+            renderCard(newCard, playerCardsContainer);
+            
+            state.playerScore = calculateHandScore(state.playerCards);
+            playerScoreDisplay.textContent = state.playerScore;
+            
+            // 버스트 체크
+            if (state.playerScore > 21) {
+                endGame('lose', `버스트! 카드 합계가 ${state.playerScore}로 21을 초과했습니다.`);
+            }
+            
+            // 더블 다운 버튼 비활성화 (히트 후에는 더블 다운 불가)
+            doubleBtn.disabled = true;
+        }
+        
+        // 스탠드 (카드 더 받지 않기)
+        function stand() {
+            if (state.gamePhase !== 'player-turn') return;
+            
+            state.gamePhase = 'dealer-turn';
+            updateGameStatus('딜러 차례입니다.');
+            
+            // 딜러의 히든 카드 공개
+            revealDealerCard();
+            
+            // 딜러 플레이 (17 이상까지 히트)
+            dealerPlay();
+        }
+        
+        // 더블 다운
+        function doubleDown() {
+            if (state.gamePhase !== 'player-turn' || state.playerCards.length !== 2) return;
+            
+            // 베팅 금액 두 배로
+            state.balance -= state.currentBet;
+            state.currentBet *= 2;
+            updateBalance();
+            betAmountDisplay.textContent = state.currentBet;
+            
+            // 카드 한 장만 더 받고 종료
+            const newCard = drawCard();
+            state.playerCards.push(newCard);
+            renderCard(newCard, playerCardsContainer);
+            
+            state.playerScore = calculateHandScore(state.playerCards);
+            playerScoreDisplay.textContent = state.playerScore;
+            
+            // 버스트 체크
+            if (state.playerScore > 21) {
+                endGame('lose', `버스트! 카드 합계가 ${state.playerScore}로 21을 초과했습니다.`);
+            } else {
+                // 딜러 턴으로
+                stand();
+            }
+        }
+        
+        // 딜러 히든 카드 공개
+        function revealDealerCard() {
+            state.dealerHiddenCard.hidden = false;
+            dealerCardsContainer.innerHTML = '';
+            
+            for (let card of state.dealerCards) {
+                renderCard(card, dealerCardsContainer);
+            }
+            
+            state.dealerScore = calculateHandScore(state.dealerCards);
+            dealerScoreDisplay.textContent = state.dealerScore;
+        }
+        
+        // 딜러 플레이
+        function dealerPlay() {
+            // 히든 카드 공개
+            revealDealerCard();
+            
+            // 딜러는 17 이상까지 히트
+            const dealerTurn = () => {
+                if (state.dealerScore < 17) {
+                    const newCard = drawCard();
+                    state.dealerCards.push(newCard);
+                    renderCard(newCard, dealerCardsContainer);
+                    
+                    state.dealerScore = calculateHandScore(state.dealerCards);
+                    dealerScoreDisplay.textContent = state.dealerScore;
+                    
+                    // 애니메이션 효과를 위한 지연
+                    setTimeout(dealerTurn, 1000);
+                } else {
+                    // 결과 판정
+                    determineWinner();
+                }
+            };
+            
+            // 딜러 턴 시작
+            setTimeout(dealerTurn, 1000);
+        }
+        
+        // 승자 결정
+        function determineWinner() {
+            let result, message, winAmount = 0;
+            
+            // 플레이어 버스트
+            if (state.playerScore > 21) {
+                result = 'lose';
+                message = `버스트! 카드 합계가 ${state.playerScore}로 21을 초과했습니다.`;
+            }
+            // 딜러 버스트
+            else if (state.dealerScore > 21) {
+                result = 'win';
+                winAmount = state.currentBet * 2;
+                message = `딜러 버스트! ${state.currentBet}${currency_name}의 2배인 ${winAmount}${currency_name}을 획득했습니다!`;
+            }
+            // 동점
+            else if (state.playerScore === state.dealerScore) {
+                result = 'push';
+                winAmount = state.currentBet;
+                message = `무승부! ${state.currentBet}${currency_name}을 돌려받습니다.`;
+            }
+            // 플레이어 승리
+            else if (state.playerScore > state.dealerScore) {
+                result = 'win';
+                winAmount = state.currentBet * 2;
+                message = `승리! ${state.currentBet}${currency_name}의 2배인 ${winAmount}${currency_name}을 획득했습니다!`;
+            }
+            // 딜러 승리
+            else {
+                result = 'lose';
+                message = `패배! 딜러의 ${state.dealerScore}이 플레이어의 ${state.playerScore}보다 높습니다.`;
+            }
+            
+            endGame(result, message, winAmount);
+        }
+        
+        // 게임 종료
+        function endGame(result, message, winAmount = 0) {
+            state.gamePhase = 'game-over';
+            
+            // 버튼 상태 업데이트
+            hitBtn.disabled = true;
+            standBtn.disabled = true;
+            doubleBtn.disabled = true;
+            dealBtn.disabled = false;
+            dealBtn.textContent = '다시 시작';
+            
+            // 히든 카드 공개
+            if (state.dealerHiddenCard && state.dealerHiddenCard.hidden) {
+                revealDealerCard();
+            }
+            
+            // 결과 표시
+            resultMessage.textContent = message;
+            resultMessage.className = `result-message ${result}`;
+            resultMessage.style.display = 'block';
+            
+            // 통계 업데이트
+            switch (result) {
+                case 'win':
+                    stats.wins++;
+                    state.balance += winAmount;
+                    stats.totalReturns += winAmount;
+                    if (winAmount > stats.maxWin) stats.maxWin = winAmount;
+                    break;
+                case 'blackjack':
+                    stats.wins++;
+                    stats.blackjacks++;
+                    state.balance += winAmount;
+                    stats.totalReturns += winAmount;
+                    if (winAmount > stats.maxWin) stats.maxWin = winAmount;
+                    break;
+                case 'lose':
+                    stats.losses++;
+                    break;
+                case 'push':
+                    stats.pushes++;
+                    state.balance += winAmount; // 베팅액 반환
+                    stats.totalReturns += winAmount;
+                    break;
+            }
+            
+            updateBalance();
+            updateStatistics();
+            updateGameStatus('게임이 종료되었습니다. 다시 시작하려면 버튼을 클릭하세요.');
+            
+            // 서버에 결과 저장
+            saveGameResult(state.currentBet, result, winAmount);
+            
+            // 결과 모달
+            showResultModal(result, message, winAmount);
+        }
+        
+        // 결과 모달 표시
+        function showResultModal(result, message, winAmount) {
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultIcon = document.getElementById('resultIcon');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultModalTitle = document.getElementById('resultModalTitle');
+            
+            switch (result) {
+                case 'win':
+                    resultModalTitle.textContent = '승리!';
+                    resultIcon.innerHTML = '🏆';
+                    resultMessage.textContent = '축하합니다! 이겼습니다!';
+                    resultDetails.textContent = `${state.currentBet}${currency_name}의 2배인 ${winAmount}${currency_name}을 획득했습니다!`;
+                    break;
+                case 'blackjack':
+                    resultModalTitle.textContent = '블랙잭!';
+                    resultIcon.innerHTML = '🎰';
+                    resultMessage.textContent = '축하합니다! 블랙잭을 달성했습니다!';
+                    resultDetails.textContent = `${state.currentBet}${currency_name}의 2.5배인 ${winAmount}${currency_name}을 획득했습니다!`;
+                    break;
+                case 'lose':
+                    resultModalTitle.textContent = '패배';
+                    resultIcon.innerHTML = '😢';
+                    resultMessage.textContent = '아쉽게도 졌습니다.';
+                    resultDetails.textContent = `${state.currentBet}${currency_name}을 잃었습니다.`;
+                    break;
+                case 'push':
+                    resultModalTitle.textContent = '무승부';
+                    resultIcon.innerHTML = '🤝';
+                    resultMessage.textContent = '무승부입니다.';
+                    resultDetails.textContent = `베팅 금액 ${state.currentBet}${currency_name}을 돌려받습니다.`;
+                    break;
+            }
+            
+            document.getElementById('playAgainBtn').onclick = resetGame;
+            
+            resultModal.show();
+        }
+        
+        // 게임 재설정
+        function resetGame() {
+            state.currentBet = 0;
+            betAmountDisplay.textContent = 0;
+            dealBtn.textContent = '게임 시작';
+            initGame();
+        }
+        
+        // 잔액 업데이트
+        function updateBalance() {
+            balanceDisplay.textContent = state.balance;
+        }
+        
+        // 베팅 금액 업데이트
+        function updateBet(amount) {
+            if (state.gamePhase !== 'betting') return;
+            
+            // 잔액 확인
+            if (amount > state.balance) {
+                alert('잔액이 부족합니다.');
+                return;
+            }
+            
+            state.currentBet = amount;
+            betAmountDisplay.textContent = amount;
+            
+            // 시작 버튼 활성화 (최소 베팅액 이상이면)
+            dealBtn.disabled = state.currentBet < state.minBet;
+        }
+        
+        // 칩 클릭 이벤트
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                if (state.gamePhase !== 'betting') return;
+                
+                const chipValue = parseInt(chip.dataset.value);
+                
+                // 이미 선택된 칩이면 선택 취소
+                if (chip.classList.contains('selected')) {
+                    chip.classList.remove('selected');
+                    updateBet(0);
+                    return;
+                }
+                
+                // 다른 칩 선택 취소
+                chips.forEach(c => c.classList.remove('selected'));
+                
+                // 해당 칩 선택
+                chip.classList.add('selected');
+                updateBet(chipValue);
+            });
+        });
+        
+        // 베팅 초기화 버튼 이벤트
+        clearBetBtn.addEventListener('click', () => {
+            if (state.gamePhase !== 'betting') return;
+            
+            state.currentBet = 0;
+            betAmountDisplay.textContent = 0;
+            dealBtn.disabled = true;
+            
+            // 칩 선택 취소
+            chips.forEach(chip => chip.classList.remove('selected'));
+        });
+        
+        // 버튼 이벤트
+        dealBtn.addEventListener('click', () => {
+            if (state.gamePhase === 'betting') {
+                startGame();
+            } else if (state.gamePhase === 'game-over') {
+                resetGame();
+            }
+        });
+        
+        hitBtn.addEventListener('click', hit);
+        standBtn.addEventListener('click', stand);
+        doubleBtn.addEventListener('click', doubleDown);
+        
+        // 서버에 게임 결과 저장
+        function saveGameResult(betAmount, result, winAmount) {
+            // AJAX 요청으로 서버에 결과 전송
+            fetch('{{ url_for("games.place_bet") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'game_id': 'blackjack',
+                    'bet_amount': betAmount,
+                    'result': result === 'lose' ? 'lose' : 'win',
+                    'win_amount': winAmount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('결과 저장 실패:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('오류 발생:', error);
+            });
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            document.getElementById('total-games').textContent = stats.totalGames;
+            document.getElementById('total-wins').textContent = stats.wins;
+            document.getElementById('total-losses').textContent = stats.losses;
+            document.getElementById('total-pushes').textContent = stats.pushes;
+            document.getElementById('total-blackjacks').textContent = stats.blackjacks;
+            document.getElementById('max-win').textContent = `${stats.maxWin}${currency_name}`;
+            document.getElementById('total-bets').textContent = `${stats.totalBets}${currency_name}`;
+            document.getElementById('total-returns').textContent = `${stats.totalReturns}${currency_name}`;
+            
+            // ROI 계산 (Return on Investment)
+            const roi = stats.totalBets > 0 ? ((stats.totalReturns - stats.totalBets) / stats.totalBets * 100).toFixed(2) : '0.00';
+            document.getElementById('roi').textContent = `${roi}%`;
+        }
+        
+        // 게임 초기화
+        initGame();
+    });
+</script>
+{% endblock %}

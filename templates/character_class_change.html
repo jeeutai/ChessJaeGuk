@@ -1,0 +1,447 @@
+{% extends 'base.html' %}
+
+{% block title %}직업 변경 - {{ system_config.get('app_name', '체스제국') }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/character.css') }}">
+<style>
+    .class-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .current-class {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .dark-mode .current-class {
+        background-color: #2d2d2d;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .class-icon {
+        width: 80px;
+        height: 80px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+    }
+    
+    .dark-mode .class-icon {
+        background-color: #3d3d3d;
+    }
+    
+    .class-info {
+        flex-grow: 1;
+    }
+    
+    .class-info h2 {
+        margin: 0 0 5px 0;
+    }
+    
+    .class-info p {
+        margin: 0 0 5px 0;
+        color: #666;
+    }
+    
+    .dark-mode .class-info p {
+        color: #aaa;
+    }
+    
+    .class-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .class-card {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+    
+    .dark-mode .class-card {
+        background-color: #2d2d2d;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .class-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .class-card.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .class-card.disabled:hover {
+        transform: none;
+    }
+    
+    .class-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .class-avatar {
+        width: 60px;
+        height: 60px;
+        background-color: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+    
+    .dark-mode .class-avatar {
+        background-color: #3d3d3d;
+    }
+    
+    .class-name {
+        font-weight: bold;
+        font-size: 18px;
+    }
+    
+    .class-description {
+        margin-bottom: 15px;
+        color: #666;
+    }
+    
+    .dark-mode .class-description {
+        color: #aaa;
+    }
+    
+    .class-stats {
+        margin-bottom: 15px;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        color: #666;
+    }
+    
+    .dark-mode .stat-label {
+        color: #aaa;
+    }
+    
+    .stat-value {
+        font-weight: bold;
+    }
+    
+    .class-requirements {
+        margin-top: auto;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .dark-mode .class-requirements {
+        border-top-color: #444;
+        color: #aaa;
+    }
+    
+    .requirement {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .requirement-met {
+        color: #4caf50;
+    }
+    
+    .requirement-not-met {
+        color: #f44336;
+    }
+    
+    .class-change-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .dark-mode .modal-content {
+        background-color: #2d2d2d;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+    }
+    
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+    }
+    
+    .dark-mode .close-modal {
+        color: #aaa;
+    }
+    
+    .modal-body {
+        margin-bottom: 20px;
+    }
+    
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .modal-btn {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    .cancel-btn {
+        background-color: #f5f5f5;
+        color: #333;
+    }
+    
+    .dark-mode .cancel-btn {
+        background-color: #444;
+        color: #fff;
+    }
+    
+    .confirm-btn {
+        background-color: #3f51b5;
+        color: white;
+    }
+    
+    .confirm-btn:hover {
+        background-color: #303f9f;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="character-container class-container">
+    <h1>직업 변경</h1>
+    
+    <div class="current-class">
+        <div class="class-icon">
+            <i class="{{ class_info.get('icon', 'fas fa-user') }} fa-2x"></i>
+        </div>
+        <div class="class-info">
+            <h2>현재 직업: {{ class_info.get('name', character.get('class', '').capitalize()) }}</h2>
+            <p>{{ class_info.get('description', '직업 설명이 없습니다.') }}</p>
+            <p>레벨: {{ character.get('level', '1') }}</p>
+        </div>
+    </div>
+    
+    <h2>선택 가능한 직업</h2>
+    
+    <div class="class-options">
+        {% for class_option in available_classes %}
+        <div class="class-card {% if not class_option.get('can_change', False) %}disabled{% endif %}" data-class-id="{{ class_option.get('id') }}">
+            <div class="class-header">
+                <div class="class-avatar">
+                    <i class="{{ class_option.get('icon', 'fas fa-user') }} fa-2x"></i>
+                </div>
+                <div class="class-name">{{ class_option.get('name', '직업') }}</div>
+            </div>
+            
+            <div class="class-description">
+                {{ class_option.get('description', '직업 설명이 없습니다.') }}
+            </div>
+            
+            <div class="class-stats">
+                <div class="stat-row">
+                    <span class="stat-label">공격력 보너스:</span>
+                    <span class="stat-value">{{ class_option.get('attack_bonus', '0') }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">방어력 보너스:</span>
+                    <span class="stat-value">{{ class_option.get('defense_bonus', '0') }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">마법 공격력 보너스:</span>
+                    <span class="stat-value">{{ class_option.get('magic_attack_bonus', '0') }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">마법 방어력 보너스:</span>
+                    <span class="stat-value">{{ class_option.get('magic_defense_bonus', '0') }}</span>
+                </div>
+            </div>
+            
+            <div class="class-requirements">
+                <h4>필요 조건:</h4>
+                <div class="requirement">
+                    <span>레벨 {{ class_option.get('required_level', '1') }} 이상</span>
+                    <span class="{% if character.get('level')|int >= class_option.get('required_level')|int %}requirement-met{% else %}requirement-not-met{% endif %}">
+                        {% if character.get('level')|int >= class_option.get('required_level')|int %}✓{% else %}✗{% endif %}
+                    </span>
+                </div>
+                {% if class_option.get('required_stat') %}
+                <div class="requirement">
+                    <span>{{ class_option.get('required_stat_name', '스탯') }} {{ class_option.get('required_stat_value', '10') }} 이상</span>
+                    <span class="{% if character.get(class_option.get('required_stat'))|int >= class_option.get('required_stat_value')|int %}requirement-met{% else %}requirement-not-met{% endif %}">
+                        {% if character.get(class_option.get('required_stat'))|int >= class_option.get('required_stat_value')|int %}✓{% else %}✗{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                {% if class_option.get('required_quest') %}
+                <div class="requirement">
+                    <span>{{ class_option.get('required_quest_name', '퀘스트') }} 완료</span>
+                    <span class="{% if class_option.get('quest_completed', False) %}requirement-met{% else %}requirement-not-met{% endif %}">
+                        {% if class_option.get('quest_completed', False) %}✓{% else %}✗{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="character-actions">
+        <a href="{{ url_for('character.index') }}" class="btn">캐릭터 정보로 돌아가기</a>
+    </div>
+</div>
+
+<!-- 직업 변경 확인 모달 -->
+<div class="class-change-modal" id="classChangeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>직업 변경 확인</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>정말 <span id="newClassName">새 직업</span>(으)로 변경하시겠습니까?</p>
+            <p>직업을 변경하면 다음과 같은 변화가 있습니다:</p>
+            <ul>
+                <li>직업 특성 및 보너스가 변경됩니다.</li>
+                <li>일부 스킬을 사용할 수 없게 될 수 있습니다.</li>
+                <li>새 직업의 고유 스킬을 배울 수 있습니다.</li>
+            </ul>
+            <p>이 변경은 되돌릴 수 없습니다.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel-btn">취소</button>
+            <button class="modal-btn confirm-btn">변경 확인</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classCards = document.querySelectorAll('.class-card:not(.disabled)');
+    const modal = document.getElementById('classChangeModal');
+    const closeModalBtn = document.querySelector('.close-modal');
+    const cancelBtn = document.querySelector('.cancel-btn');
+    const confirmBtn = document.querySelector('.confirm-btn');
+    const newClassNameSpan = document.getElementById('newClassName');
+    
+    let selectedClassId = null;
+    
+    // 직업 카드 클릭 이벤트
+    classCards.forEach(card => {
+        card.addEventListener('click', function() {
+            selectedClassId = this.getAttribute('data-class-id');
+            const className = this.querySelector('.class-name').textContent;
+            newClassNameSpan.textContent = className;
+            modal.style.display = 'flex';
+        });
+    });
+    
+    // 모달 닫기 이벤트
+    closeModalBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    cancelBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    // 모달 외부 클릭 시 닫기
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // 직업 변경 확인 이벤트
+    confirmBtn.addEventListener('click', function() {
+        if (!selectedClassId) return;
+        
+        // 직업 변경 요청
+        fetch('/character/change_class', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `class_id=${selectedClassId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 성공 시 페이지 새로고침 또는 리다이렉트
+                window.location.href = '/character';
+            } else {
+                alert(data.message || '직업 변경 중 오류가 발생했습니다.');
+                modal.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('직업 변경 중 오류가 발생했습니다.');
+            modal.style.display = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

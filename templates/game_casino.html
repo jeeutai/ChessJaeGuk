@@ -1,0 +1,892 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .casino-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .games-tab {
+    margin-bottom: 20px;
+  }
+  
+  /* 룰렛 스타일 */
+  .roulette-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+  
+  .roulette-wheel {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    border-radius: 50%;
+    background: #E0E0E0;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+  }
+  
+  .wheel-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    background: #333;
+    border-radius: 50%;
+    z-index: 10;
+  }
+  
+  .wheel-segment {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    transform-origin: 100% 100%;
+  }
+  
+  .wheel-number {
+    position: absolute;
+    transform-origin: center;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+  }
+  
+  .wheel-marker {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 30px;
+    background: #D50000;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    z-index: 20;
+  }
+  
+  .betting-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .bet-option {
+    padding: 10px;
+    text-align: center;
+    background: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .bet-option:hover {
+    background: #388E3C;
+  }
+  
+  .bet-option.selected {
+    background: #1B5E20;
+    font-weight: bold;
+    transform: scale(1.05);
+  }
+  
+  .number-board {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-gap: 5px;
+    margin-top: 20px;
+  }
+  
+  .number-bet {
+    padding: 10px;
+    text-align: center;
+    background: #1976D2;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .number-bet:hover {
+    background: #1565C0;
+  }
+  
+  .number-bet.selected {
+    background: #0D47A1;
+    font-weight: bold;
+    transform: scale(1.05);
+  }
+  
+  /* 슬롯머신 스타일 */
+  .slot-machine {
+    background: linear-gradient(to bottom, #4A148C, #7B1FA2);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .slot-display {
+    background: #E0E0E0;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    width: 300px;
+  }
+  
+  .slot-reel {
+    width: 80px;
+    height: 120px;
+    background: white;
+    margin: 0 5px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 50px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .slot-symbol {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: top 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  
+  .slot-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .spin-button {
+    background: #FFC107;
+    color: #333;
+    font-size: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 50px;
+    margin-top: 20px;
+    cursor: pointer;
+    width: 200px;
+    transition: all 0.2s;
+  }
+  
+  .spin-button:hover {
+    background: #FFA000;
+    transform: scale(1.05);
+  }
+  
+  .spin-button:disabled {
+    background: #9E9E9E;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .bet-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  .bet-input {
+    flex-grow: 1;
+    max-width: 200px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 10px;
+  }
+  
+  .bet-button {
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  .result-message {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .win {
+    color: #4CAF50;
+  }
+  
+  .lose {
+    color: #F44336;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-danger text-white">
+      <h2 class="mb-0"><i class="fas fa-dice me-2"></i>카지노 게임</h2>
+    </div>
+    <div class="card-body">
+      <div class="balance-display mb-3 p-3 bg-light rounded">
+        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold" id="user-balance">{{ g.user.balance }}{{ system_config.get('currency_symbol', 'CM') }}</span></h5>
+      </div>
+      
+      <div class="casino-container">
+        <!-- 게임 선택 탭 -->
+        <ul class="nav nav-tabs games-tab" id="casinoTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="roulette-tab" data-bs-toggle="tab" data-bs-target="#roulette" type="button" role="tab" aria-controls="roulette" aria-selected="true">
+              <i class="fas fa-circle-notch me-2"></i>룰렛
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="slot-tab" data-bs-toggle="tab" data-bs-target="#slot" type="button" role="tab" aria-controls="slot" aria-selected="false">
+              <i class="fas fa-slot-machine me-2"></i>슬롯머신
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="casinoTabContent">
+          <!-- 룰렛 게임 -->
+          <div class="tab-pane fade show active" id="roulette" role="tabpanel" aria-labelledby="roulette-tab">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="roulette-container">
+                  <h4 class="mb-3">룰렛 휠</h4>
+                  <div class="roulette-wheel">
+                    <div class="wheel-marker"></div>
+                    <div class="wheel-center"></div>
+                    <!-- 룰렛 세그먼트는 자바스크립트로 생성됩니다 -->
+                  </div>
+                  <div class="mt-3" id="roulette-result"></div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-coins me-2"></i>베팅</h4>
+                  </div>
+                  <div class="card-body">
+                    <form id="roulette-bet-form">
+                      <div class="mb-3">
+                        <label for="roulette-bet-amount" class="form-label">배팅 금액</label>
+                        <div class="input-group">
+                          <input type="number" class="form-control" id="roulette-bet-amount" min="500" max="{{ g.user.balance }}" value="500" required>
+                          <span class="input-group-text">{{ system_config.get('currency_symbol', 'CM') }}</span>
+                        </div>
+                        <div class="form-text">최소 500{{ system_config.get('currency_symbol', 'CM') }}부터 배팅 가능합니다.</div>
+                      </div>
+                      
+                      <div class="mb-3">
+                        <label class="form-label">베팅 옵션</label>
+                        <div class="betting-board">
+                          <div class="bet-option" data-type="odd">홀수</div>
+                          <div class="bet-option" data-type="even">짝수</div>
+                          <div class="bet-option" data-type="red">빨강</div>
+                          <div class="bet-option" data-type="black">검정</div>
+                          <div class="bet-option" data-type="1-18">1-18</div>
+                          <div class="bet-option" data-type="19-36">19-36</div>
+                        </div>
+                      </div>
+                      
+                      <div class="mb-3">
+                        <label class="form-label">번호 베팅 (35배)</label>
+                        <div class="number-board" id="number-board">
+                          <!-- 번호는 자바스크립트로 생성됩니다 -->
+                        </div>
+                      </div>
+                      
+                      <div class="mb-3">
+                        <div id="bet-summary">선택한 베팅: <span id="selected-bet">없음</span></div>
+                      </div>
+                      
+                      <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg" id="spin-button" disabled>
+                          <i class="fas fa-play me-2"></i>룰렛 돌리기
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 슬롯머신 게임 -->
+          <div class="tab-pane fade" id="slot" role="tabpanel" aria-labelledby="slot-tab">
+            <div class="slot-machine">
+              <h4 class="text-white mb-3">슬롯머신</h4>
+              
+              <div class="slot-display">
+                <div class="slot-reel" id="reel1">
+                  <div class="slot-symbol">🍒</div>
+                </div>
+                <div class="slot-reel" id="reel2">
+                  <div class="slot-symbol">🍋</div>
+                </div>
+                <div class="slot-reel" id="reel3">
+                  <div class="slot-symbol">🍇</div>
+                </div>
+              </div>
+              
+              <div class="slot-controls">
+                <div class="bet-controls">
+                  <button class="bet-button" id="decrease-bet">-</button>
+                  <div class="bet-input">
+                    <label for="slot-bet-amount">배팅:</label>
+                    <input type="number" id="slot-bet-amount" min="500" max="{{ g.user.balance }}" value="500" readonly>
+                  </div>
+                  <button class="bet-button" id="increase-bet">+</button>
+                </div>
+                
+                <button class="spin-button" id="slot-spin-button">
+                  <i class="fas fa-sync-alt me-2"></i>스핀!
+                </button>
+                
+                <div class="result-message" id="slot-result"></div>
+              </div>
+            </div>
+            
+            <div class="card mt-4">
+              <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>슬롯머신 배당</h4>
+              </div>
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>조합</th>
+                      <th>배당</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>🍒 🍒 🍒</td>
+                      <td>배팅금액의 7배</td>
+                    </tr>
+                    <tr>
+                      <td>🍋 🍋 🍋</td>
+                      <td>배팅금액의 5배</td>
+                    </tr>
+                    <tr>
+                      <td>🍇 🍇 🍇</td>
+                      <td>배팅금액의 3배</td>
+                    </tr>
+                    <tr>
+                      <td>💰 💰 💰</td>
+                      <td>배팅금액의 10배</td>
+                    </tr>
+                    <tr>
+                      <td>동일한 두 개의 심볼</td>
+                      <td>배팅금액의 2배</td>
+                    </tr>
+                    <tr>
+                      <td>그 외</td>
+                      <td>패배</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const userBalance = document.getElementById('user-balance');
+    
+    // 룰렛 게임
+    const rouletteWheel = document.querySelector('.roulette-wheel');
+    const spinButton = document.getElementById('spin-button');
+    const rouletteBetForm = document.getElementById('roulette-bet-form');
+    const rouletteBetAmount = document.getElementById('roulette-bet-amount');
+    const betOptions = document.querySelectorAll('.bet-option');
+    const numberBoard = document.getElementById('number-board');
+    const selectedBet = document.getElementById('selected-bet');
+    const rouletteResult = document.getElementById('roulette-result');
+    
+    let isSpinning = false;
+    let selectedBetType = null;
+    let selectedNumber = null;
+    
+    // 룰렛 번호와 색상
+    const rouletteNumbers = [
+      { number: 0, color: 'green' },
+      { number: 32, color: 'red' }, { number: 15, color: 'black' }, { number: 19, color: 'red' },
+      { number: 4, color: 'black' }, { number: 21, color: 'red' }, { number: 2, color: 'black' },
+      { number: 25, color: 'red' }, { number: 17, color: 'black' }, { number: 34, color: 'red' },
+      { number: 6, color: 'black' }, { number: 27, color: 'red' }, { number: 13, color: 'black' },
+      { number: 36, color: 'red' }, { number: 11, color: 'black' }, { number: 30, color: 'red' },
+      { number: 8, color: 'black' }, { number: 23, color: 'red' }, { number: 10, color: 'black' },
+      { number: 5, color: 'red' }, { number: 24, color: 'black' }, { number: 16, color: 'red' },
+      { number: 33, color: 'black' }, { number: 1, color: 'red' }, { number: 20, color: 'black' },
+      { number: 14, color: 'red' }, { number: 31, color: 'black' }, { number: 9, color: 'red' },
+      { number: 22, color: 'black' }, { number: 18, color: 'red' }, { number: 29, color: 'black' },
+      { number: 7, color: 'red' }, { number: 28, color: 'black' }, { number: 12, color: 'red' },
+      { number: 35, color: 'black' }, { number: 3, color: 'red' }, { number: 26, color: 'black' }
+    ];
+    
+    // 룰렛 휠 생성
+    function createRouletteWheel() {
+      // 세그먼트 각도
+      const segmentAngle = 360 / rouletteNumbers.length;
+      
+      rouletteNumbers.forEach((item, index) => {
+        const segment = document.createElement('div');
+        segment.className = 'wheel-segment';
+        
+        // 세그먼트 스타일 설정
+        segment.style.borderWidth = '150px 25px 0';
+        segment.style.borderColor = `${item.color} transparent transparent`;
+        segment.style.transform = `rotate(${index * segmentAngle}deg)`;
+        segment.style.left = '125px';
+        segment.style.top = '0';
+        
+        // 번호 텍스트 추가
+        const numberText = document.createElement('div');
+        numberText.className = 'wheel-number';
+        numberText.textContent = item.number;
+        
+        // 번호 위치 계산
+        const angle = (index * segmentAngle + segmentAngle / 2) * Math.PI / 180;
+        const distance = 100;
+        const x = Math.sin(angle) * distance + 150;
+        const y = -Math.cos(angle) * distance + 150;
+        
+        numberText.style.left = `${x}px`;
+        numberText.style.top = `${y}px`;
+        numberText.style.transform = `translate(-50%, -50%) rotate(${90 + index * segmentAngle}deg)`;
+        
+        rouletteWheel.appendChild(segment);
+        rouletteWheel.appendChild(numberText);
+      });
+    }
+    
+    // 번호판 생성
+    function createNumberBoard() {
+      for (let i = 1; i <= 36; i++) {
+        const numberBet = document.createElement('div');
+        numberBet.className = 'number-bet';
+        numberBet.textContent = i;
+        
+        // 홀수/짝수에 따라 배경색 설정
+        const color = rouletteNumbers.find(item => item.number === i).color;
+        numberBet.style.backgroundColor = color === 'red' ? '#D32F2F' : '#212121';
+        
+        numberBet.addEventListener('click', function() {
+          // 다른 번호 선택 초기화
+          document.querySelectorAll('.number-bet').forEach(btn => btn.classList.remove('selected'));
+          betOptions.forEach(option => option.classList.remove('selected'));
+          
+          numberBet.classList.add('selected');
+          selectedBetType = 'number';
+          selectedNumber = i;
+          selectedBet.textContent = `번호 ${i} (35배)`;
+          spinButton.disabled = false;
+        });
+        
+        numberBoard.appendChild(numberBet);
+      }
+    }
+    
+    // 베팅 옵션 클릭 이벤트
+    betOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        // 다른 옵션 선택 초기화
+        betOptions.forEach(opt => opt.classList.remove('selected'));
+        document.querySelectorAll('.number-bet').forEach(btn => btn.classList.remove('selected'));
+        
+        option.classList.add('selected');
+        selectedBetType = option.dataset.type;
+        selectedNumber = null;
+        
+        // 베팅 설명 업데이트
+        let betDescription = '';
+        switch (selectedBetType) {
+          case 'odd':
+            betDescription = '홀수 (1배)';
+            break;
+          case 'even':
+            betDescription = '짝수 (1배)';
+            break;
+          case 'red':
+            betDescription = '빨강 (1배)';
+            break;
+          case 'black':
+            betDescription = '검정 (1배)';
+            break;
+          case '1-18':
+            betDescription = '1-18 (1배)';
+            break;
+          case '19-36':
+            betDescription = '19-36 (1배)';
+            break;
+        }
+        
+        selectedBet.textContent = betDescription;
+        spinButton.disabled = false;
+      });
+    });
+    
+    // 룰렛 폼 제출
+    rouletteBetForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      if (isSpinning) return;
+      
+      const betAmount = parseInt(rouletteBetAmount.value);
+      
+      if (isNaN(betAmount) || betAmount < 500) {
+        alert('최소 500{{ system_config.get('currency_symbol', 'CM') }} 이상 배팅해야 합니다.');
+        return;
+      }
+      
+      if (betAmount > parseInt(userBalance.textContent.replace(/[^0-9]/g, ''))) {
+        alert('잔액이 부족합니다.');
+        return;
+      }
+      
+      if (!selectedBetType) {
+        alert('베팅 옵션을 선택해주세요.');
+        return;
+      }
+      
+      // 룰렛 스핀 시작
+      spinRouletteWheel(betAmount);
+    });
+    
+    // 룰렛 스핀
+    function spinRouletteWheel(betAmount) {
+      isSpinning = true;
+      spinButton.disabled = true;
+      rouletteResult.textContent = '';
+      
+      // 랜덤 회전 각도 (10-20 회전 + 당첨 위치)
+      const randomIndex = Math.floor(Math.random() * rouletteNumbers.length);
+      const winningNumber = rouletteNumbers[randomIndex].number;
+      const spinDegrees = 3600 + (randomIndex * (360 / rouletteNumbers.length));
+      
+      // 룰렛 애니메이션
+      rouletteWheel.style.transition = 'transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      rouletteWheel.style.transform = `rotate(${spinDegrees}deg)`;
+      
+      // 스핀 완료 후 결과 처리
+      setTimeout(() => {
+        isSpinning = false;
+        spinButton.disabled = false;
+        
+        let result = '';
+        let winAmount = 0;
+        
+        // 베팅 결과 계산
+        if (selectedBetType === 'number' && selectedNumber === winningNumber) {
+          // 번호 정확히 맞췄을 때 (35배)
+          winAmount = betAmount * 35;
+          result = 'big_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber}</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (35배)</p>
+          </div>`;
+        } else if (selectedBetType === 'odd' && winningNumber !== 0 && winningNumber % 2 === 1) {
+          // 홀수 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (홀수)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else if (selectedBetType === 'even' && winningNumber !== 0 && winningNumber % 2 === 0) {
+          // 짝수 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (짝수)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else if (selectedBetType === 'red' && rouletteNumbers.find(item => item.number === winningNumber).color === 'red') {
+          // 빨간색 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (빨강)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else if (selectedBetType === 'black' && rouletteNumbers.find(item => item.number === winningNumber).color === 'black') {
+          // 검은색 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (검정)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else if (selectedBetType === '1-18' && winningNumber >= 1 && winningNumber <= 18) {
+          // 1-18 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (1-18)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else if (selectedBetType === '19-36' && winningNumber >= 19 && winningNumber <= 36) {
+          // 19-36 베팅 성공 (1배)
+          winAmount = betAmount * 2;
+          result = 'small_win';
+          rouletteResult.innerHTML = `<div class="alert alert-success">
+            <h4>당첨! 번호 ${winningNumber} (19-36)</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} (2배)</p>
+          </div>`;
+        } else {
+          // 패배
+          winAmount = 0;
+          result = 'lose';
+          rouletteResult.innerHTML = `<div class="alert alert-danger">
+            <h4>실패! 번호 ${winningNumber}</h4>
+            <p>베팅: ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}, 당첨금: 0{{ system_config.get('currency_symbol', 'CM') }}</p>
+          </div>`;
+        }
+        
+        // 서버에 게임 결과 전송
+        fetch('{{ url_for("games.place_bet") }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `game_id=casino&bet_amount=${betAmount}&game_data=roulette_${winningNumber}`
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 잔액 업데이트
+            userBalance.textContent = `${data.new_balance}{{ system_config.get('currency_symbol', 'CM') }}`;
+          } else {
+            alert(data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('게임 결과를 처리하는 중 오류가 발생했습니다.');
+        });
+      }, 5000);
+    }
+    
+    // 룰렛 휠 및 번호판 생성
+    createRouletteWheel();
+    createNumberBoard();
+    
+    // 슬롯머신 게임
+    const slotReels = [
+      document.getElementById('reel1').querySelector('.slot-symbol'),
+      document.getElementById('reel2').querySelector('.slot-symbol'),
+      document.getElementById('reel3').querySelector('.slot-symbol')
+    ];
+    const decreaseBetBtn = document.getElementById('decrease-bet');
+    const increaseBetBtn = document.getElementById('increase-bet');
+    const slotBetAmount = document.getElementById('slot-bet-amount');
+    const slotSpinButton = document.getElementById('slot-spin-button');
+    const slotResult = document.getElementById('slot-result');
+    
+    let isSlotSpinning = false;
+    const symbols = ['🍒', '🍋', '🍇', '💰', '🍎', '⭐'];
+    
+    // 베팅 금액 조절
+    decreaseBetBtn.addEventListener('click', function() {
+      let bet = parseInt(slotBetAmount.value);
+      if (bet > 500) {
+        bet -= 500;
+        slotBetAmount.value = bet;
+      }
+    });
+    
+    increaseBetBtn.addEventListener('click', function() {
+      let bet = parseInt(slotBetAmount.value);
+      const max = parseInt(userBalance.textContent.replace(/[^0-9]/g, ''));
+      
+      if (bet + 500 <= max) {
+        bet += 500;
+        slotBetAmount.value = bet;
+      }
+    });
+    
+    // 슬롯머신 스핀
+    slotSpinButton.addEventListener('click', function() {
+      if (isSlotSpinning) return;
+      
+      const betAmount = parseInt(slotBetAmount.value);
+      
+      if (isNaN(betAmount) || betAmount < 500) {
+        alert('최소 500{{ system_config.get('currency_symbol', 'CM') }} 이상 배팅해야 합니다.');
+        return;
+      }
+      
+      if (betAmount > parseInt(userBalance.textContent.replace(/[^0-9]/g, ''))) {
+        alert('잔액이 부족합니다.');
+        return;
+      }
+      
+      spinSlotMachine(betAmount);
+    });
+    
+    // 슬롯머신 스핀 함수
+    function spinSlotMachine(betAmount) {
+      isSlotSpinning = true;
+      slotSpinButton.disabled = true;
+      slotResult.textContent = '';
+      
+      // 각 릴 애니메이션 시작
+      const finalSymbols = [];
+      
+      slotReels.forEach((reel, index) => {
+        // 0~5 사이의 랜덤 인덱스 생성
+        const randomIndex = Math.floor(Math.random() * symbols.length);
+        const symbol = symbols[randomIndex];
+        finalSymbols.push(symbol);
+        
+        // 릴 애니메이션
+        const positions = [];
+        for (let i = 0; i < 20 + index * 5; i++) {
+          const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+          positions.push(randomSymbol);
+        }
+        positions.push(symbol); // 최종 심볼
+        
+        let currentPosition = 0;
+        
+        // 회전 애니메이션
+        const spinInterval = setInterval(() => {
+          if (currentPosition >= positions.length) {
+            clearInterval(spinInterval);
+            return;
+          }
+          
+          reel.textContent = positions[currentPosition];
+          currentPosition++;
+        }, 100);
+        
+        // 회전 종료 타이밍 설정 (릴마다 다르게)
+        setTimeout(() => {
+          clearInterval(spinInterval);
+          reel.textContent = symbol;
+          
+          // 마지막 릴이 멈췄을 때 결과 계산
+          if (index === slotReels.length - 1) {
+            setTimeout(() => checkSlotResult(finalSymbols, betAmount), 500);
+          }
+        }, 1000 + (index * 500));
+      });
+    }
+    
+    // 슬롯머신 결과 확인
+    function checkSlotResult(symbols, betAmount) {
+      isSlotSpinning = false;
+      slotSpinButton.disabled = false;
+      
+      let result = '';
+      let winAmount = 0;
+      let message = '';
+      
+      // 모든 심볼이 같은 경우
+      if (symbols[0] === symbols[1] && symbols[1] === symbols[2]) {
+        // 심볼에 따른 배당 계산
+        switch (symbols[0]) {
+          case '🍒':
+            winAmount = betAmount * 7;
+            message = `3개의 🍒! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (7배)`;
+            break;
+          case '🍋':
+            winAmount = betAmount * 5;
+            message = `3개의 🍋! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (5배)`;
+            break;
+          case '🍇':
+            winAmount = betAmount * 3;
+            message = `3개의 🍇! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (3배)`;
+            break;
+          case '💰':
+            winAmount = betAmount * 10;
+            message = `3개의 💰! 대박! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (10배)`;
+            break;
+          default:
+            winAmount = betAmount * 2;
+            message = `3개의 ${symbols[0]}! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (2배)`;
+        }
+        
+        result = 'win';
+        slotResult.textContent = message;
+        slotResult.className = 'result-message win';
+      }
+      // 두 개의 같은 심볼
+      else if (
+        symbols[0] === symbols[1] ||
+        symbols[1] === symbols[2] ||
+        symbols[0] === symbols[2]
+      ) {
+        winAmount = betAmount * 2;
+        message = `2개의 같은 심볼! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }} 베팅으로 ${winAmount}{{ system_config.get('currency_symbol', 'CM') }} 획득! (2배)`;
+        result = 'small_win';
+        slotResult.textContent = message;
+        slotResult.className = 'result-message win';
+      }
+      // 모두 다른 경우
+      else {
+        message = `아쉽게도 실패! ${betAmount}{{ system_config.get('currency_symbol', 'CM') }}을 잃었습니다.`;
+        result = 'lose';
+        slotResult.textContent = message;
+        slotResult.className = 'result-message lose';
+      }
+      
+      // 서버에 게임 결과 전송
+      fetch('{{ url_for("games.place_bet") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `game_id=casino&bet_amount=${betAmount}&game_data=slot`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 잔액 업데이트
+          userBalance.textContent = `${data.new_balance}{{ system_config.get('currency_symbol', 'CM') }}`;
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('게임 결과를 처리하는 중 오류가 발생했습니다.');
+      });
+    }
+  });
+</script>
+{% endblock %}

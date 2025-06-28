@@ -1,0 +1,252 @@
+.character-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.character-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.dark-mode .character-card {
+    background-color: #2d2d2d;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.character-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.character-avatar {
+    width: 80px;
+    height: 80px;
+    background-color: #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+}
+
+.dark-mode .character-avatar {
+    background-color: #3d3d3d;
+}
+
+.character-info h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.character-info p {
+    margin: 5px 0 0;
+    color: #666;
+}
+
+.dark-mode .character-info p {
+    color: #aaa;
+}
+
+.character-stats {
+    margin-bottom: 20px;
+}
+
+.stat-row {
+    margin-bottom: 10px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+}
+
+.stat-label {
+    width: 60px;
+    font-weight: bold;
+}
+
+.stat-bar {
+    flex-grow: 1;
+    height: 15px;
+    background-color: #eee;
+    border-radius: 10px;
+    margin: 0 10px;
+    overflow: hidden;
+}
+
+.dark-mode .stat-bar {
+    background-color: #444;
+}
+
+.stat-fill {
+    height: 100%;
+    border-radius: 10px;
+}
+
+.stat-fill.hp {
+    background-color: #ff5252;
+}
+
+.stat-fill.mp {
+    background-color: #4285f4;
+}
+
+.stat-fill.exp {
+    background-color: #fbbc05;
+}
+
+.stat-value {
+    width: 80px;
+    text-align: right;
+}
+
+.character-attributes {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.attribute {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 30%;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+.dark-mode .attribute {
+    background-color: #333;
+}
+
+.attribute-label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.attribute-value {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.attribute-up-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.attribute-up-btn:hover {
+    background-color: #388e3c;
+}
+
+.character-details {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.character-details p {
+    margin: 5px 20px 5px 0;
+}
+
+.character-description {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.dark-mode .character-description {
+    background-color: #333;
+}
+
+.character-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #3f51b5;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #303f9f;
+}
+
+.character-skills {
+    margin-top: 30px;
+}
+
+.skills-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.skill-card {
+    display: flex;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.dark-mode .skill-card {
+    background-color: #333;
+}
+
+.skill-icon {
+    width: 50px;
+    height: 50px;
+    background-color: #e0e0e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.dark-mode .skill-icon {
+    background-color: #444;
+}
+
+.skill-info {
+    flex-grow: 1;
+}
+
+.skill-info h3 {
+    margin: 0 0 5px;
+    font-size: 18px;
+}
+
+.skill-info p {
+    margin: 0 0 5px;
+    font-size: 14px;
+}
+
+.skill-level {
+    color: #666;
+    font-style: italic;
+}
+
+.dark-mode .skill-level {
+    color: #aaa;
+}

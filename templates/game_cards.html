@@ -1,0 +1,416 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .card-game-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .card-playing-area {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px;
+    background-color: #1B5E20;
+    border-radius: 8px;
+    min-height: 300px;
+  }
+
+  .playing-card {
+    width: 120px;
+    height: 180px;
+    background-color: #FFF;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    transform-style: preserve-3d;
+    position: relative;
+  }
+
+  .playing-card:hover {
+    transform: translateY(-10px);
+  }
+
+  .playing-card.flipped {
+    transform: rotateY(180deg);
+  }
+
+  .card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card-back {
+    background: linear-gradient(135deg, #1976D2, #0D47A1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card-back i {
+    font-size: 50px;
+    color: white;
+  }
+
+  .card-front {
+    background-color: white;
+    transform: rotateY(180deg);
+  }
+
+  .politician-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #DDD;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .politician-image i {
+    font-size: 40px;
+    color: #555;
+  }
+
+  .politician-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  .politician-power {
+    font-size: 20px;
+    font-weight: bold;
+    color: #D32F2F;
+  }
+
+  .bet-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .bet-amount {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 20px;
+  }
+
+  .result-display {
+    margin-top: 30px;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .win {
+    background-color: #C8E6C9;
+    color: #1B5E20;
+  }
+
+  .lose {
+    background-color: #FFCDD2;
+    color: #B71C1C;
+  }
+
+  .special-card {
+    border: 3px solid gold;
+    background-color: rgba(255, 223, 0, 0.1);
+  }
+
+  .corrupt-card {
+    border: 3px solid #9c0000;
+    background-color: rgba(156, 0, 0, 0.1);
+  }
+
+  .corrupt-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #9c0000;
+    font-size: 18px;
+  }
+
+  .card-value {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .card-suit {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 16px;
+  }
+
+  .game-instructions {
+    margin-top: 30px;
+  }
+
+  .politician-party {
+    margin-bottom: 5px;
+    font-style: italic;
+    color: #555;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white">
+      <h2 class="mb-0"><i class="fas fa-id-card me-2"></i>정치인 카드 게임</h2>
+    </div>
+    <div class="card-body">
+      <div class="balance-display mb-3 p-3 bg-light rounded">
+        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold" id="user-balance">{{ g.user.balance }}원</span></h5>
+      </div>
+
+      <div class="card-game-container">
+        <!-- 베팅 영역 -->
+        <div class="betting-area mb-4" id="betting-area">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h4 class="mb-0"><i class="fas fa-coins me-2"></i>배팅하기</h4>
+            </div>
+            <div class="card-body">
+              <form id="bet-form">
+                <div class="mb-3">
+                  <label for="bet-amount" class="form-label">배팅 금액</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="bet-amount" min="200" max="{{ g.user.balance }}" value="200" required>
+                    <span class="input-group-text">{{ system_config.get('currency_symbol', 'CM') }}</span>
+                  </div>
+                  <div class="form-text">최소 200원부터 배팅 가능합니다.</div>
+                </div>
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-success btn-lg">게임 시작</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 게임 영역 -->
+        <div id="game-area" style="display: none;">
+          <div class="text-center mb-4">
+            <h4>카드를 선택하세요!</h4>
+            <p>총 5장의 카드 중 1장을 선택하세요. 높은 수치의 카드나 특별 카드를 뽑으면 승리합니다.</p>
+          </div>
+
+          <div class="card-playing-area" id="playing-area">
+            <!-- 카드들이 여기에 동적으로 추가됩니다 -->
+          </div>
+
+          <div class="result-display" id="result-display" style="display: none;"></div>
+
+          <div class="mt-4 text-center">
+            <button id="play-again-btn" class="btn btn-primary btn-lg" style="display: none;">다시 하기</button>
+          </div>
+        </div>
+
+        <!-- 게임 설명 -->
+        <div class="game-instructions card mt-4">
+          <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>게임 방법</h4>
+          </div>
+          <div class="card-body">
+            <ol>
+              <li>배팅 금액을 입력하고 "게임 시작" 버튼을 클릭합니다.</li>
+              <li>5장의 카드 중 1장을 선택하세요.</li>
+              <li><strong class="text-success">특별 카드(금테두리)</strong>를 뽑으면 배팅금의 3배를 받습니다.</li>
+              <li><strong class="text-primary">좋은 정치인(8-10점)</strong>의 카드를 뽑으면 배팅금의 2배를 받습니다.</li>
+              <li><strong class="text-secondary">중립 정치인(5-7점)</strong>의 카드를 뽑으면 배팅금이 반환됩니다.</li>
+              <li><strong class="text-warning">역량이 낮은 정치인(1-4점)</strong>의 카드를 뽑으면 배팅금을 잃습니다.</li>
+              <li><strong class="text-danger">부패한 정치인(붉은테두리)</strong>의 카드를 뽑으면 배팅금을 잃고 추가 손실이 발생합니다!</li>
+            </ol>
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>각 게임마다 카드의 위치는 무작위로 변경됩니다. 신중하게 선택하세요!
+            </div>
+            <div class="alert alert-danger">
+              <i class="fas fa-skull me-2"></i>부패한 정치인 카드는 당신의 잔액에서 추가로 차감합니다. 사회적 비용이 발생합니다!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const bettingArea = document.getElementById('betting-area');
+    const gameArea = document.getElementById('game-area');
+    const playingArea = document.getElementById('playing-area');
+    const resultDisplay = document.getElementById('result-display');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const betForm = document.getElementById('bet-form');
+    const userBalance = document.getElementById('user-balance');
+
+    let betAmount = 0;
+    let gameComplete = false;
+    let selectedCard = null;
+
+    // 정치인 데이터 (서버에서 받아온 데이터)
+    const politicians = {{ politicians|tojson }};
+
+    // 베팅 폼 제출 처리
+    betForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      betAmount = parseInt(document.getElementById('bet-amount').value);
+
+      if (isNaN(betAmount) || betAmount < 200) {
+        alert('최소 200원 이상 배팅해야 합니다.');
+        return;
+      }
+
+      if (betAmount > parseInt(userBalance.textContent.replace(/[^0-9]/g, ''))) {
+        alert('잔액이 부족합니다.');
+        return;
+      }
+
+      // 게임 시작
+      startGame();
+    });
+
+    // 게임 시작
+    function startGame() {
+      bettingArea.style.display = 'none';
+      gameArea.style.display = 'block';
+      resultDisplay.style.display = 'none';
+      playAgainBtn.style.display = 'none';
+      playingArea.innerHTML = '';
+      gameComplete = false;
+
+      // 5장의 카드 생성
+      const selectedPoliticians = getRandomPoliticians(5);
+
+      for (let i = 0; i < 5; i++) {
+        const politician = selectedPoliticians[i];
+
+        const card = document.createElement('div');
+        card.className = 'playing-card';
+
+        // 카드 디자인에 부패 여부 반영
+        let cardClass = '';
+        let cardIcon = 'fa-user-tie';
+
+        if (politician.special) {
+          cardClass = 'special-card';
+          cardIcon = 'fa-user-check';
+        } else if (politician.corrupt) {
+          cardClass = 'corrupt-card';
+          cardIcon = 'fa-user-secret';
+        }
+
+        card.innerHTML = `
+          <div class="card-back">
+            <i class="fas fa-chess-king"></i>
+          </div>
+          <div class="card-front ${cardClass}">
+            <div class="politician-image">
+              <i class="fas ${cardIcon}"></i>
+            </div>
+            <div class="politician-name">${politician.name}</div>
+            <div class="politician-party">${politician.party}</div>
+            <div class="politician-power">${politician.power}</div>
+            ${politician.corrupt ? '<div class="corrupt-badge"><i class="fas fa-skull"></i></div>' : ''}
+          </div>
+        `;
+
+        // 카드 클릭 이벤트
+        card.addEventListener('click', function() {
+          if (gameComplete) return;
+
+          // 선택한 카드만 뒤집기
+          card.classList.add('flipped');
+          gameComplete = true;
+          selectedCard = politician;
+
+          // 1초 후에 결과 표시
+          setTimeout(() => {
+            showResult();
+          }, 1000);
+        });
+
+        playingArea.appendChild(card);
+      }
+    }
+
+    // 무작위 정치인 선택
+    function getRandomPoliticians(count) {
+      const shuffled = [...politicians].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+
+    // 결과 표시
+    function showResult() {
+      // 서버에 게임 결과 전송
+      fetch('{{ url_for("games.place_bet") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `game_id=cards&bet_amount=${betAmount}&card_id=${selectedCard.id}` // Assuming card has an ID
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // 잔액 업데이트
+            userBalance.textContent = `${data.new_balance}원`;
+
+            // 결과 표시 업데이트
+            const resultParts = data.result.split(':');
+            const resultMessage = resultParts[0];
+
+            let displayMessage = resultMessage;
+            if (data.win_amount > 0) {
+              displayMessage += ` ${data.win_amount}{{ currency_name }}를 획득했습니다!`;
+            } else if (data.win_amount < 0) {
+              displayMessage += ` ${Math.abs(data.win_amount)}{{ currency_name }}를 잃었습니다...`;
+            }
+
+            resultDisplay.textContent = displayMessage;
+            resultDisplay.className = 'result-display ' + (data.win_amount >= 0 ? 'win' : 'lose');
+            resultDisplay.style.display = 'block';
+            playAgainBtn.style.display = 'inline-block';
+          } else {
+            alert(data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('게임 결과를 처리하는 중 오류가 발생했습니다.');
+        });
+    }
+
+    // 다시 하기 버튼
+    playAgainBtn.addEventListener('click', function() {
+      bettingArea.style.display = 'block';
+      gameArea.style.display = 'none';
+    });
+  });
+</script>
+{% endblock %}

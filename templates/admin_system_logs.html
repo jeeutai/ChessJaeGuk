@@ -1,0 +1,529 @@
+{% extends 'admin.html' %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">시스템 로그</h4>
+        </div>
+        <div class="card-body">
+            <!-- 로그 필터링 -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">로그 필터</h5>
+                </div>
+                <div class="card-body">
+                    <form id="logFilterForm" action="{{ url_for('admin.system_logs') }}" method="get">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="log_type" class="form-label">로그 유형</label>
+                                <select class="form-select" id="log_type" name="log_type">
+                                    <option value="">모든 유형</option>
+                                    <option value="system" {% if filter_params.log_type == 'system' %}selected{% endif %}>시스템</option>
+                                    <option value="user" {% if filter_params.log_type == 'user' %}selected{% endif %}>사용자</option>
+                                    <option value="security" {% if filter_params.log_type == 'security' %}selected{% endif %}>보안</option>
+                                    <option value="transaction" {% if filter_params.log_type == 'transaction' %}selected{% endif %}>거래</option>
+                                    <option value="error" {% if filter_params.log_type == 'error' %}selected{% endif %}>오류</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="severity" class="form-label">심각도</label>
+                                <select class="form-select" id="severity" name="severity">
+                                    <option value="">모든 심각도</option>
+                                    <option value="info" {% if filter_params.severity == 'info' %}selected{% endif %}>정보</option>
+                                    <option value="warning" {% if filter_params.severity == 'warning' %}selected{% endif %}>경고</option>
+                                    <option value="error" {% if filter_params.severity == 'error' %}selected{% endif %}>오류</option>
+                                    <option value="critical" {% if filter_params.severity == 'critical' %}selected{% endif %}>심각</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="start_date" class="form-label">시작일</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filter_params.start_date }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="end_date" class="form-label">종료일</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filter_params.end_date }}">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="search_term" class="form-label">검색어</label>
+                                <input type="text" class="form-control" id="search_term" name="search_term" value="{{ filter_params.search_term }}" placeholder="로그 내용 검색...">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="user_id" class="form-label">사용자 ID</label>
+                                <input type="text" class="form-control" id="user_id" name="user_id" value="{{ filter_params.user_id }}" placeholder="특정 사용자 ID">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="ip_address" class="form-label">IP 주소</label>
+                                <input type="text" class="form-control" id="ip_address" name="ip_address" value="{{ filter_params.ip_address }}" placeholder="IP 주소로 필터링">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-secondary" id="resetFilters">
+                                    <i class="fas fa-sync"></i> 필터 초기화
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> 로그 검색
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 로그 결과 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">로그 목록</h5>
+                    <div>
+                        <button class="btn btn-light btn-sm" id="exportLogBtn">
+                            <i class="fas fa-file-export"></i> 내보내기
+                        </button>
+                        <div class="btn-group btn-group-sm ms-2">
+                            <button class="btn btn-light" id="refreshLogBtn">
+                                <i class="fas fa-sync"></i> 새로고침
+                            </button>
+                            <button class="btn btn-light" id="autoRefreshBtn" data-active="false">
+                                <i class="fas fa-clock"></i> 자동 갱신
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="180">타임스탬프</th>
+                                    <th width="100">유형</th>
+                                    <th width="100">심각도</th>
+                                    <th>메시지</th>
+                                    <th width="120">사용자</th>
+                                    <th width="120">IP 주소</th>
+                                    <th width="80">상세</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if log.log_type == 'system' %}bg-info
+                                            {% elif log.log_type == 'user' %}bg-primary
+                                            {% elif log.log_type == 'security' %}bg-warning
+                                            {% elif log.log_type == 'transaction' %}bg-success
+                                            {% elif log.log_type == 'error' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ log.log_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if log.severity == 'info' %}bg-info
+                                            {% elif log.severity == 'warning' %}bg-warning
+                                            {% elif log.severity == 'error' %}bg-danger
+                                            {% elif log.severity == 'critical' %}bg-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ log.severity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.message }}</td>
+                                    <td>
+                                        {% if log.user_id %}
+                                        <a href="{{ url_for('admin.edit_user', user_id=log.user_id) }}" class="badge bg-primary">{{ log.user_id }}</a>
+                                        {% else %}
+                                        <span class="badge bg-secondary">시스템</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.ip_address or '-' }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info view-log-details" data-id="{{ log.id }}" data-bs-toggle="modal" data-bs-target="#logDetailsModal">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 페이지네이션 -->
+                    {% if pagination %}
+                    <nav aria-label="로그 페이지 탐색">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {{ 'disabled' if pagination.current_page == 1 else '' }}">
+                                <a class="page-link" href="{{ url_for('admin.system_logs', page=pagination.current_page-1, **filter_params) if pagination.current_page > 1 else '#' }}" aria-label="이전">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            
+                            {% for page_num in range(pagination.start_page, pagination.end_page + 1) %}
+                            <li class="page-item {{ 'active' if page_num == pagination.current_page else '' }}">
+                                <a class="page-link" href="{{ url_for('admin.system_logs', page=page_num, **filter_params) }}">{{ page_num }}</a>
+                            </li>
+                            {% endfor %}
+                            
+                            <li class="page-item {{ 'disabled' if pagination.current_page == pagination.total_pages else '' }}">
+                                <a class="page-link" href="{{ url_for('admin.system_logs', page=pagination.current_page+1, **filter_params) if pagination.current_page < pagination.total_pages else '#' }}" aria-label="다음">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 조건에 맞는 로그가 없습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 로그 상세 정보 모달 -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="logDetailsModalLabel">로그 상세 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="logDetail" class="p-3">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩 중...</span>
+                        </div>
+                        <p>로그 상세 정보를 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 로그 내보내기 모달 -->
+<div class="modal fade" id="exportLogModal" tabindex="-1" aria-labelledby="exportLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="exportLogModalLabel">로그 내보내기</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportLogForm" action="{{ url_for('admin.export_logs') }}" method="post">
+                    <input type="hidden" name="export_logs" value="1">
+                    
+                    <!-- 현재 필터링 조건이 적용된 상태로 내보내기 -->
+                    {% for key, value in filter_params.items() %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endfor %}
+                    
+                    <div class="mb-3">
+                        <label for="export_format" class="form-label">내보내기 형식</label>
+                        <select class="form-select" id="export_format" name="export_format" required>
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="txt">텍스트</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_all_fields" name="include_all_fields" value="1" checked>
+                            <label class="form-check-label" for="include_all_fields">모든 필드 포함</label>
+                        </div>
+                        <div class="form-text">체크를 해제하면 아래에서 필드를 선택할 수 있습니다.</div>
+                    </div>
+                    
+                    <div id="fieldSelection" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">내보낼 필드 선택</label>
+                            <div class="row">
+                                {% set fields = [
+                                    ('id', 'ID'),
+                                    ('timestamp', '타임스탬프'),
+                                    ('log_type', '로그 유형'),
+                                    ('severity', '심각도'),
+                                    ('message', '메시지'),
+                                    ('user_id', '사용자 ID'),
+                                    ('ip_address', 'IP 주소'),
+                                    ('details', '상세 정보')
+                                ] %}
+                                
+                                {% for field_key, field_name in fields %}
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="field_{{ field_key }}" name="export_fields[]" value="{{ field_key }}" checked>
+                                        <label class="form-check-label" for="field_{{ field_key }}">
+                                            {{ field_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="export_limit" class="form-label">내보낼 로그 수</label>
+                        <select class="form-select" id="export_limit" name="export_limit">
+                            <option value="current">현재 페이지만</option>
+                            <option value="all" selected>모든 결과</option>
+                            <option value="100">최대 100개</option>
+                            <option value="500">최대 500개</option>
+                            <option value="1000">최대 1000개</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" form="exportLogForm" class="btn btn-primary">
+                    <i class="fas fa-download"></i> 내보내기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 필터 초기화
+    document.getElementById('resetFilters').addEventListener('click', function() {
+        document.getElementById('log_type').value = '';
+        document.getElementById('severity').value = '';
+        document.getElementById('start_date').value = '';
+        document.getElementById('end_date').value = '';
+        document.getElementById('search_term').value = '';
+        document.getElementById('user_id').value = '';
+        document.getElementById('ip_address').value = '';
+        
+        // 폼 제출
+        document.getElementById('logFilterForm').submit();
+    });
+    
+    // 로그 새로고침
+    document.getElementById('refreshLogBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
+    
+    // 자동 갱신 버튼
+    const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+    let autoRefreshInterval;
+    
+    autoRefreshBtn.addEventListener('click', function() {
+        const isActive = this.getAttribute('data-active') === 'true';
+        
+        if (isActive) {
+            // 자동 갱신 중지
+            clearInterval(autoRefreshInterval);
+            this.setAttribute('data-active', 'false');
+            this.innerHTML = '<i class="fas fa-clock"></i> 자동 갱신';
+            this.classList.remove('btn-success');
+            this.classList.add('btn-light');
+        } else {
+            // 자동 갱신 시작 (30초 간격)
+            autoRefreshInterval = setInterval(() => {
+                window.location.reload();
+            }, 30000);
+            
+            this.setAttribute('data-active', 'true');
+            this.innerHTML = '<i class="fas fa-clock"></i> 갱신 중지';
+            this.classList.remove('btn-light');
+            this.classList.add('btn-success');
+        }
+    });
+    
+    // 로그 상세 정보 보기
+    document.querySelectorAll('.view-log-details').forEach(button => {
+        button.addEventListener('click', function() {
+            const logId = this.getAttribute('data-id');
+            const logDetailContainer = document.getElementById('logDetail');
+            
+            // 로딩 상태 표시
+            logDetailContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">로딩 중...</span>
+                    </div>
+                    <p>로그 상세 정보를 불러오는 중...</p>
+                </div>
+            `;
+            
+            // 로그 상세 정보 가져오기
+            fetch(`/admin/system_logs/detail/${logId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const log = data.log;
+                        
+                        // 상세 정보 표시
+                        let detailsHtml = `
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>ID:</strong> ${log.id}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>타임스탬프:</strong> ${log.timestamp}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>로그 유형:</strong> 
+                                    <span class="badge 
+                                        ${log.log_type === 'system' ? 'bg-info' : ''}
+                                        ${log.log_type === 'user' ? 'bg-primary' : ''}
+                                        ${log.log_type === 'security' ? 'bg-warning' : ''}
+                                        ${log.log_type === 'transaction' ? 'bg-success' : ''}
+                                        ${log.log_type === 'error' ? 'bg-danger' : ''}
+                                        ${!['system', 'user', 'security', 'transaction', 'error'].includes(log.log_type) ? 'bg-secondary' : ''}">
+                                        ${log.log_type}
+                                    </span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>심각도:</strong> 
+                                    <span class="badge 
+                                        ${log.severity === 'info' ? 'bg-info' : ''}
+                                        ${log.severity === 'warning' ? 'bg-warning' : ''}
+                                        ${log.severity === 'error' ? 'bg-danger' : ''}
+                                        ${log.severity === 'critical' ? 'bg-dark' : ''}
+                                        ${!['info', 'warning', 'error', 'critical'].includes(log.severity) ? 'bg-secondary' : ''}">
+                                        ${log.severity}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <strong>메시지:</strong>
+                                <div class="alert alert-secondary">${log.message}</div>
+                            </div>
+                        `;
+                        
+                        // 사용자 정보
+                        if (log.user_id) {
+                            detailsHtml += `
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>사용자 ID:</strong> 
+                                        <a href="/admin/users/edit/${log.user_id}" class="badge bg-primary">${log.user_id}</a>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>IP 주소:</strong> ${log.ip_address || '-'}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // 상세 정보
+                        if (log.details) {
+                            let detailsObj;
+                            try {
+                                detailsObj = JSON.parse(log.details);
+                                detailsHtml += `
+                                    <div class="mb-3">
+                                        <strong>상세 정보:</strong>
+                                        <div class="alert alert-info">
+                                            <pre class="mb-0" style="white-space: pre-wrap;">${JSON.stringify(detailsObj, null, 2)}</pre>
+                                        </div>
+                                    </div>
+                                `;
+                            } catch (e) {
+                                // JSON이 아닌 경우 일반 텍스트로 표시
+                                detailsHtml += `
+                                    <div class="mb-3">
+                                        <strong>상세 정보:</strong>
+                                        <div class="alert alert-info">
+                                            <pre class="mb-0" style="white-space: pre-wrap;">${log.details}</pre>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+                        
+                        // 관련 로그
+                        if (log.related_logs && log.related_logs.length > 0) {
+                            detailsHtml += `
+                                <div class="mb-3">
+                                    <strong>관련 로그:</strong>
+                                    <ul class="list-group">
+                            `;
+                            
+                            log.related_logs.forEach(related => {
+                                detailsHtml += `
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>${related.timestamp} - ${related.message}</span>
+                                            <button type="button" class="btn btn-sm btn-info view-log-details" data-id="${related.id}" data-bs-toggle="modal" data-bs-target="#logDetailsModal">
+                                                <i class="fas fa-info-circle"></i>
+                                            </button>
+                                        </div>
+                                    </li>
+                                `;
+                            });
+                            
+                            detailsHtml += `
+                                    </ul>
+                                </div>
+                            `;
+                        }
+                        
+                        logDetailContainer.innerHTML = detailsHtml;
+                        
+                        // 관련 로그의 상세 정보 버튼에 이벤트 리스너 추가
+                        logDetailContainer.querySelectorAll('.view-log-details').forEach(relatedBtn => {
+                            relatedBtn.addEventListener('click', function() {
+                                const relatedLogId = this.getAttribute('data-id');
+                                // 현재 모달 닫기 후 새 모달 열기
+                                const currentModal = bootstrap.Modal.getInstance(document.getElementById('logDetailsModal'));
+                                currentModal.hide();
+                                setTimeout(() => {
+                                    const newButton = document.querySelector(`.view-log-details[data-id="${relatedLogId}"]`);
+                                    if (newButton) newButton.click();
+                                }, 500);
+                            });
+                        });
+                    } else {
+                        logDetailContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle"></i> 로그 상세 정보를 가져오는 중 오류가 발생했습니다.
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    logDetailContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle"></i> 서버 오류가 발생했습니다.
+                        </div>
+                    `;
+                });
+        });
+    });
+    
+    // 로그 내보내기 버튼
+    document.getElementById('exportLogBtn').addEventListener('click', function() {
+        const exportLogModal = new bootstrap.Modal(document.getElementById('exportLogModal'));
+        exportLogModal.show();
+    });
+    
+    // 모든 필드 포함 체크박스 변경 이벤트
+    const includeAllFieldsCheckbox = document.getElementById('include_all_fields');
+    const fieldSelection = document.getElementById('fieldSelection');
+    
+    includeAllFieldsCheckbox.addEventListener('change', function() {
+        fieldSelection.style.display = this.checked ? 'none' : 'block';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'layout.html' %}
+
+{% block title %}업적 - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<style>
+  .points-banner {
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  .achievement-category {
+    margin-bottom: 30px;
+  }
+  
+  .category-header {
+    background-color: #f5f5f5;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .category-header:hover {
+    background-color: #ececec;
+  }
+  
+  .category-header i {
+    margin-right: 10px;
+    color: var(--primary-color);
+  }
+  
+  .achievement-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .achievement-card {
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+    height: 100%;
+  }
+  
+  .achievement-card.completed {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .achievement-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .achievement-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f5f5f5;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+  
+  .achievement-card.completed .achievement-icon {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .achievement-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .achievement-description {
+    color: #666;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    flex-grow: 1;
+  }
+  
+  .achievement-progress {
+    margin-top: auto;
+  }
+  
+  .progress {
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+  }
+  
+  .achievement-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  
+  .achievement-reward {
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+  
+  .achievement-completed-date {
+    font-style: italic;
+  }
+  
+  .category-icon-map {
+    beginner: 'baby',
+    financial: 'money-bill-wave',
+    social: 'users',
+    gaming: 'gamepad',
+    loyalty: 'heart',
+    collector: 'trophy'
+  }
+  
+  @media (max-width: 768px) {
+    .achievement-list {
+      grid-template-columns: 1fr;
+    }
+    
+    .achievement-card {
+      padding: 12px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="points-banner">
+    <h2>{{ user_points }} 포인트</h2>
+    <p>현재 레벨: {{ user_level.current.level }}. {{ user_level.current.name }}</p>
+    <a href="{{ url_for('rewards.index') }}" class="btn btn-outline-light mt-2">보상 상점으로 돌아가기</a>
+  </div>
+  
+  {% for category_name, achievements in categories.items() %}
+    <div class="achievement-category">
+      <div class="category-header" onclick="toggleCategory('{{ category_name }}')">
+        {% if category_name == 'beginner' %}
+          <div><i class="fas fa-baby"></i> 입문자</div>
+        {% elif category_name == 'financial' %}
+          <div><i class="fas fa-money-bill-wave"></i> 경제</div>
+        {% elif category_name == 'social' %}
+          <div><i class="fas fa-users"></i> 소셜</div>
+        {% elif category_name == 'gaming' %}
+          <div><i class="fas fa-gamepad"></i> 게임</div>
+        {% elif category_name == 'loyalty' %}
+          <div><i class="fas fa-heart"></i> 충성도</div>
+        {% elif category_name == 'collector' %}
+          <div><i class="fas fa-trophy"></i> 컬렉터</div>
+        {% else %}
+          <div><i class="fas fa-star"></i> {{ category_name }}</div>
+        {% endif %}
+        
+        {% set completed_count = achievements|selectattr('completed')|list|count %}
+        <span>{{ completed_count }}/{{ achievements|length }}</span>
+      </div>
+      
+      <div class="achievement-list" id="{{ category_name }}-achievements">
+        {% for achievement in achievements %}
+          <div class="achievement-card {% if achievement.completed %}completed{% endif %}">
+            <div class="achievement-header">
+              <div class="achievement-icon">
+                <i class="fas fa-{% if achievement.completed %}check{% else %}lock{% endif %}"></i>
+              </div>
+              <div>
+                <div class="achievement-title">{{ achievement.name }}</div>
+                <div class="achievement-description">{{ achievement.description }}</div>
+              </div>
+            </div>
+            
+            <div class="achievement-progress">
+              {% set progress_percent = (achievement.progress|int / achievement.requirement_value|int * 100)|round|int %}
+              {% if progress_percent > 100 %}
+                {% set progress_percent = 100 %}
+              {% endif %}
+              
+              <div class="progress">
+                <div class="progress-bar {% if achievement.completed %}bg-success{% endif %}" role="progressbar" style="width: {{ progress_percent }}%" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              
+              <div class="achievement-footer">
+                <div>진행: {{ achievement.progress }}/{{ achievement.requirement_value }}</div>
+                <div class="achievement-reward">+{{ achievement.points_reward }} 포인트</div>
+              </div>
+              
+              {% if achievement.completed %}
+                <div class="achievement-completed-date mt-2 text-center">
+                  <small>달성일: {{ achievement.completed_date.split(' ')[0] }}</small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCategory(categoryName) {
+  const achievementsList = document.getElementById(`${categoryName}-achievements`);
+  if (achievementsList.style.display === 'none') {
+    achievementsList.style.display = 'grid';
+  } else {
+    achievementsList.style.display = 'none';
+  }
+}
+
+// 초기화 시 모든 카테고리 표시
+document.addEventListener('DOMContentLoaded', function() {
+  const allAchievementLists = document.querySelectorAll('.achievement-list');
+  allAchievementLists.forEach(list => {
+    list.style.display = 'grid';
+  });
+});
+</script>
+{% endblock %}

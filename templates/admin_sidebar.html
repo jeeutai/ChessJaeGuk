@@ -1,0 +1,123 @@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">관리자 메뉴</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{{ url_for('admin.index') }}" class="list-group-item list-group-item-action {% if section == 'dashboard' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt me-2"></i> 대시보드
+        </a>
+        <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action {% if section == 'users' %}active{% endif %}">
+            <i class="fas fa-users me-2"></i> 사용자 관리
+        </a>
+        <a href="{{ url_for('admin.transactions') }}" class="list-group-item list-group-item-action {% if section == 'transactions' %}active{% endif %}">
+            <i class="fas fa-exchange-alt me-2"></i> 거래 내역
+        </a>
+        <a href="{{ url_for('admin.login_logs') }}" class="list-group-item list-group-item-action {% if section == 'login_logs' %}active{% endif %}">
+            <i class="fas fa-sign-in-alt me-2"></i> 로그인 기록
+        </a>
+        <a href="{{ url_for('admin.game_logs') }}" class="list-group-item list-group-item-action {% if section == 'game_logs' %}active{% endif %}">
+            <i class="fas fa-gamepad me-2"></i> 게임 기록
+        </a>
+        <a href="{{ url_for('admin.market_logs') }}" class="list-group-item list-group-item-action {% if section == 'market_logs' %}active{% endif %}">
+            <i class="fas fa-shopping-cart me-2"></i> 마켓 기록
+        </a>
+        <a href="{{ url_for('admin.notices') }}" class="list-group-item list-group-item-action {% if section == 'notices' %}active{% endif %}">
+            <i class="fas fa-bullhorn me-2"></i> 공지사항
+        </a>
+        <a href="{{ url_for('admin.items') }}" class="list-group-item list-group-item-action {% if section == 'items' %}active{% endif %}">
+            <i class="fas fa-cube me-2"></i> 아이템 관리
+        </a>
+        <a href="{{ url_for('admin.stocks') }}" class="list-group-item list-group-item-action {% if section == 'stocks' %}active{% endif %}">
+            <i class="fas fa-chart-line me-2"></i> 주식 관리
+        </a>
+        <a href="{{ url_for('admin.send_money') }}" class="list-group-item list-group-item-action {% if section == 'send_money' %}active{% endif %}">
+            <i class="fas fa-money-bill-wave me-2"></i> 머니 송금
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">시스템 설정</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{{ url_for('admin.system') }}" class="list-group-item list-group-item-action {% if section == 'system' %}active{% endif %}">
+            <i class="fas fa-cogs me-2"></i> 시스템 정보
+        </a>
+        <a href="{{ url_for('admin.config_system') }}" class="list-group-item list-group-item-action {% if section == 'config_system' %}active{% endif %}">
+            <i class="fas fa-sliders-h me-2"></i> 시스템 설정
+        </a>
+        <a href="{{ url_for('admin.config_games') }}" class="list-group-item list-group-item-action {% if section == 'config_games' %}active{% endif %}">
+            <i class="fas fa-dice me-2"></i> 게임 설정
+        </a>
+        <a href="{{ url_for('admin.config_stocks') }}" class="list-group-item list-group-item-action {% if section == 'config_stocks' %}active{% endif %}">
+            <i class="fas fa-chart-area me-2"></i> 주식 설정
+        </a>
+        <a href="{{ url_for('admin.config_politicians') }}" class="list-group-item list-group-item-action {% if section == 'config_politicians' %}active{% endif %}">
+            <i class="fas fa-user-tie me-2"></i> 정치인 설정
+        </a>
+        <a href="{{ url_for('admin.config_market') }}" class="list-group-item list-group-item-action {% if section == 'config_market' %}active{% endif %}">
+            <i class="fas fa-store me-2"></i> 마켓 설정
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">포인트 & 보상 시스템</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{{ url_for('admin.config_achievements') }}" class="list-group-item list-group-item-action {% if section == 'config_achievements' %}active{% endif %}">
+            <i class="fas fa-trophy me-2"></i> 업적 시스템
+        </a>
+        <a href="{{ url_for('admin.config_levels') }}" class="list-group-item list-group-item-action {% if section == 'config_levels' %}active{% endif %}">
+            <i class="fas fa-level-up-alt me-2"></i> 레벨 시스템
+        </a>
+        <a href="{{ url_for('admin.config_quests') }}" class="list-group-item list-group-item-action {% if section == 'config_quests' %}active{% endif %}">
+            <i class="fas fa-tasks me-2"></i> 퀘스트 시스템
+        </a>
+        <a href="{{ url_for('admin.config_reward_items') }}" class="list-group-item list-group-item-action {% if section == 'config_reward_items' %}active{% endif %}">
+            <i class="fas fa-gift me-2"></i> 보상 아이템
+        </a>
+        <a href="{{ url_for('admin.config_points') }}" class="list-group-item list-group-item-action {% if section == 'config_points' %}active{% endif %}">
+            <i class="fas fa-star me-2"></i> 포인트 설정
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">시스템 보안 & API</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{{ url_for('admin.security_settings') }}" class="list-group-item list-group-item-action {% if section == 'security_settings' %}active{% endif %}">
+            <i class="fas fa-shield-alt me-2"></i> 보안 설정
+        </a>
+        <a href="{{ url_for('admin.api_settings') }}" class="list-group-item list-group-item-action {% if section == 'api_settings' %}active{% endif %}">
+            <i class="fas fa-plug me-2"></i> API 관리
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">고급 도구</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{{ url_for('admin.csv_editor') }}" class="list-group-item list-group-item-action {% if section == 'csv_editor' %}active{% endif %}">
+            <i class="fas fa-table me-2"></i> CSV 편집기
+        </a>
+        <a href="{{ url_for('admin.backup_data') }}" class="list-group-item list-group-item-action {% if section == 'backup_data' %}active{% endif %}">
+            <i class="fas fa-save me-2"></i> 데이터 백업
+        </a>
+        <a href="{{ url_for('admin.restore_data') }}" class="list-group-item list-group-item-action {% if section == 'restore_data' %}active{% endif %}">
+            <i class="fas fa-undo me-2"></i> 데이터 복원
+        </a>
+        <a href="{{ url_for('admin.system_logs') }}" class="list-group-item list-group-item-action {% if section == 'system_logs' %}active{% endif %}">
+            <i class="fas fa-clipboard-list me-2"></i> 시스템 로그
+        </a>
+        <a href="{{ url_for('admin.batch_operations') }}" class="list-group-item list-group-item-action {% if section == 'batch_operations' %}active{% endif %}">
+            <i class="fas fa-tasks me-2"></i> 일괄 작업
+        </a>
+    </div>
+</div>

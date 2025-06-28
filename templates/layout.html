@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ system_config.get('system_name', '체스제국 송금 시스템') }}</title>
+    <meta name="description" content="{{ system_config.get('site_description', '체스제국 송금 시스템: 모바일 친화적인 웹 기반 가상 화폐 플랫폼') }}">
+    {% if g.user %}
+    <meta name="user-logged-in" content="true">
+    {% endif %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 커스텀 CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout_fix.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/darkmode.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 헤더 -->
+            <header class="bg-primary text-white p-3">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0">
+                            <a href="{{ url_for('home') }}" class="text-white text-decoration-none">
+                                <i class="fas fa-chess-king me-2"></i>{{ system_config.get('app_name', '체스제국') }}
+                            </a>
+                        </h1>
+                        {% if g.user %}
+                        <div class="d-flex align-items-center">
+                            <span class="currency-badge me-2">
+                                <i class="fas fa-coins me-1"></i>{{ g.user.balance }} {{ system_config.get('currency_symbol', 'CM') }}
+                            </span>
+                            <span class="user-info text-white me-3">
+                                <i class="fas fa-user-circle me-1"></i>{{ g.user.nickname }}
+                            </span>
+                            <!-- 다크 모드 토글 -->
+                            <div class="theme-switch me-2">
+                                <label for="theme-switch" class="visually-hidden">테마 변경</label>
+                                <input type="checkbox" id="theme-switch" onchange="toggleTheme()" title="테마 변경" aria-label="테마 변경">
+                                <span class="slider"></span>
+                            </div>
+                            <i id="theme-icon" class="fas fa-sun theme-icon"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+
+            <!-- 메시지 플래시 -->
+            <div class="container mt-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- 메인 콘텐츠 영역 -->
+            <div class="container py-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <!-- 하단 메뉴바 -->
+        {% if g.user %}
+        <nav class="bottom-nav fixed-bottom bg-white border-top">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('home') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-home d-block mb-1"></i>
+                    <span>홈</span>
+                </a>
+
+                {% if system_config.get('enable_market', 'True') == 'True' %}
+                <a href="{{ url_for('market.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-store d-block mb-1"></i>
+                    <span>마트</span>
+                </a>
+                {% endif %}
+
+                {% if system_config.get('enable_games', 'True') == 'True' %}
+                <a href="{{ url_for('games.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-gamepad d-block mb-1"></i>
+                    <span>게임</span>
+                </a>
+                {% endif %}
+
+                {% if system_config.get('enable_stocks', 'True') == 'True' %}
+                <a href="{{ url_for('stocks.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-chart-line d-block mb-1"></i>
+                    <span>주식</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('events.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-calendar-alt d-block mb-1"></i>
+                    <span>이벤트</span>
+                </a>
+
+                <a href="{{ url_for('character.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-user-circle d-block mb-1"></i>
+                    <span>캐릭터</span>
+                </a>
+
+                {% if system_config.get('enable_chat', 'True') == 'True' %}
+                <a href="{{ url_for('chat.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-comments d-block mb-1"></i>
+                    <span>채팅</span>
+                </a>
+                {% endif %}
+
+                {% if system_config.get('enable_friends', 'True') == 'True' %}
+                <a href="{{ url_for('friends.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-user-friends d-block mb-1"></i>
+                    <span>친구</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('auth.id_card') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-id-card d-block mb-1"></i>
+                    <span>주민증</span>
+                </a>
+                {% if g.user.is_admin == 'True' %}
+                <a href="{{ url_for('admin.index') }}" class="nav-link text-center py-2">
+                    <i class="fas fa-cogs d-block mb-1"></i>
+                    <span>관리</span>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+
+    <!-- 로딩 인디케이터 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">로딩 중...</span>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 컨테이너 -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+
+    <!-- JavaScript 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

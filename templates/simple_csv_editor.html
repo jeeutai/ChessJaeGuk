@@ -1,0 +1,139 @@
+{% extends 'admin.html' %}
+
+{% block admin_content %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">CSV 파일 텍스트 편집기(매우 위험)</h4>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">CSV 파일 선택</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                {% for key, path in csv_files.items() %}
+                                <a href="{{ url_for('admin.simple_csv_editor', file=key) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ 'active' if key == current_file else '' }}">
+                                    {{ key }}.csv
+                                    <span class="badge bg-primary rounded-pill">
+                                        {{ file_rows.get(key, 0) }} 행
+                                    </span>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">CSV 편집 가이드</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> <strong>주의:</strong> CSV 파일 직접 편집은 시스템에 큰 영향을 줄 수 있습니다.
+                            </div>
+                            <ul>
+                                <li>CSV 파일은 시스템의 데이터베이스로 작동합니다.</li>
+                                <li>헤더(첫 행)는 변경하지 마세요. 데이터 구조가 손상될 수 있습니다.</li>
+                                <li>각 행의 열 수는 헤더와 동일해야 합니다.</li>
+                                <li>콤마(,)는 열 구분자로 사용됩니다.</li>
+                                <li>텍스트에 콤마가 포함된 경우 쌍따옴표(")로 감싸주세요.</li>
+                                <li>변경 전 데이터 백업을 권장합니다.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if current_file and csv_content %}
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ current_file }}.csv 편집</h5>
+                    <div>
+                        <button class="btn btn-warning btn-sm" id="downloadBtn">
+                            <i class="fas fa-download"></i> 내보내기
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="csvTextForm" action="{{ url_for('admin.save_simple_csv') }}" method="post">
+                        <input type="hidden" name="file_name" value="{{ current_file }}">
+                        <div class="form-group mb-3">
+                            <label for="csvTextarea" class="form-label">CSV 내용 편집</label>
+                            <textarea class="form-control font-monospace csv-textarea" id="csvTextarea" name="csv_content" rows="20" placeholder="CSV 내용을 입력하세요" title="CSV 파일 내용">{{ csv_content }}</textarea>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('admin.system') }}'">취소</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 저장
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% elif current_file %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> CSV 파일을 로드하는 중 오류가 발생했습니다.
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 좌측 목록에서 편집할 CSV 파일을 선택하세요.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    const csvTextarea = document.getElementById('csvTextarea');
+    
+    // CSV 내보내기
+    if (downloadBtn && csvTextarea) {
+        downloadBtn.addEventListener('click', function() {
+            const csvContent = csvTextarea.value;
+            
+            // 다운로드 링크 생성
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', '{{ current_file }}.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+    
+    // 탭 키 처리
+    if (csvTextarea) {
+        csvTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                
+                // 탭 문자 삽입
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                
+                this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+                
+                // 커서 위치 조정
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

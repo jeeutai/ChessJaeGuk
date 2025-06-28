@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .divider-text {
+    position: relative;
+    display: inline-block;
+    padding: 0 10px;
+    background-color: white;
+    z-index: 1;
+    color: #6c757d;
+    font-size: 14px;
+  }
+  
+  hr {
+    margin-top: -10px;
+    margin-bottom: 20px;
+  }
+  
+  .social-login-buttons .btn {
+    text-align: left;
+    padding: 12px;
+    position: relative;
+  }
+  
+  .social-login-buttons .btn i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+  }
+  
+  body[data-theme="dark"] .divider-text {
+    background-color: var(--card-background);
+  }
+  
+  /* 소셜 로그인 버튼 스타일 */
+  .btn-warning {
+    background-color: #FEE500;
+    border-color: #FEE500;
+    color: #000;
+  }
+  
+  .btn-success {
+    background-color: #03C75A;
+    border-color: #03C75A;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="card shadow-lg mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white text-center py-3">
+            <h2 class="mb-0">
+                <i class="fas fa-chess-king me-2"></i>체스제국 로그인
+            </h2>
+        </div>
+        <div class="card-body p-4">
+            <form method="post" action="{{ url_for('auth.login') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">아이디</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">비밀번호</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">로그인</button>
+                </div>
+            </form>
+            
+            <div class="text-center mt-4">
+                <p>계정이 없으신가요? <a href="{{ url_for('auth.register') }}" class="text-decoration-none">회원가입</a></p>
+            </div>
+            
+            {% if system_config.get('enable_social_login', 'False') == 'True' %}
+            <div class="mt-4">
+                <hr>
+                <div class="text-center mb-3">
+                    <span class="divider-text">소셜 계정으로 로그인</span>
+                </div>
+                
+                <div class="social-login-buttons">
+                    {% set providers = system_config.get('social_login_providers', 'google,kakao,naver').split(',') %}
+                    
+                    {% if 'google' in providers %}
+                    <a href="{{ url_for('auth.social_login', provider='google') }}" class="btn btn-outline-danger mb-2 w-100">
+                        <i class="fab fa-google me-2"></i> Google로 계속하기
+                    </a>
+                    {% endif %}
+                    
+                    {% if 'kakao' in providers %}
+                    <a href="{{ url_for('auth.social_login', provider='kakao') }}" class="btn btn-warning mb-2 w-100">
+                        <i class="fas fa-comment me-2"></i> 카카오로 계속하기
+                    </a>
+                    {% endif %}
+                    
+                    {% if 'naver' in providers %}
+                    <a href="{{ url_for('auth.social_login', provider='naver') }}" class="btn btn-success mb-2 w-100">
+                        <i class="fas fa-n me-2"></i> 네이버로 계속하기
+                    </a>
+                    {% endif %}
+                    
+                    {% if 'facebook' in providers %}
+                    <a href="{{ url_for('auth.social_login', provider='facebook') }}" class="btn btn-primary mb-2 w-100">
+                        <i class="fab fa-facebook-f me-2"></i> Facebook으로 계속하기
+                    </a>
+                    {% endif %}
+                    
+                    {% if 'apple' in providers %}
+                    <a href="{{ url_for('auth.social_login', provider='apple') }}" class="btn btn-dark mb-2 w-100">
+                        <i class="fab fa-apple me-2"></i> Apple로 계속하기
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('auth.social_login_options') }}" class="btn btn-link w-100">
+                        <i class="fas fa-external-link-alt me-1"></i> 모든 로그인 옵션 보기
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

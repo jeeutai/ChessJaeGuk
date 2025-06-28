@@ -1,0 +1,92 @@
+/* 레이아웃 관련 수정사항 */
+body {
+    padding-bottom: 70px;  /* 하단바 높이보다 크게 설정 */
+}
+
+/* 하단 내비게이션 바 개선 */
+.bottom-nav {
+    z-index: 1030;  /* 다른 요소들 위에 표시되도록 z-index 설정 */
+    padding: 0;
+}
+
+.bottom-nav .d-flex {
+    width: 100%;
+}
+
+.system-header {
+    background: linear-gradient(45deg, #1a237e, #0d47a1);
+}
+
+.bottom-nav .nav-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.bottom-nav .nav-link.active {
+    color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.bottom-nav .nav-link i {
+    font-size: 1.2rem;
+    margin-bottom: 0.2rem;
+}
+
+.bottom-nav .nav-link span {
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* 반응형 조정 - 작은 화면에서 아이콘만 표시 */
+@media (max-width: 576px) {
+    .bottom-nav .nav-link span {
+        font-size: 0.65rem;
+    }
+    
+    /* 메뉴가 7개 이상일 때 추가 스타일 */
+    .bottom-nav.many-items .nav-link {
+        padding: 0.25rem 0.1rem;
+    }
+    
+    .bottom-nav.many-items .nav-link i {
+        font-size: 1rem;
+        margin-bottom: 0.1rem;
+    }
+    
+    .bottom-nav.many-items .nav-link span {
+        font-size: 0.6rem;
+    }
+}
+
+/* 현재 페이지 표시 */
+.bottom-nav .nav-link.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background-color: #0d6efd;
+    border-radius: 0 0 3px 3px;
+}
+
+/* 메인 컨텐츠 영역 */
+.main-content {
+    flex: 1;
+    padding-bottom: 1rem;
+}
+
+/* 헤더 영역 개선 */
+header.bg-primary {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}

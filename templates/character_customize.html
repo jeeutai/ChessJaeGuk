@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}캐릭터 커스터마이징 - {{ system_config.get('app_name', '체스제국') }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/character.css') }}">
+<style>
+    .customize-form {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .dark-mode .customize-form {
+        background-color: #2d2d2d;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .dark-mode .form-group input, .dark-mode .form-group select {
+        background-color: #333;
+        border-color: #444;
+        color: #fff;
+    }
+    
+    .color-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .color-option {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    
+    .color-option.selected {
+        border-color: #000;
+    }
+    
+    .dark-mode .color-option.selected {
+        border-color: #fff;
+    }
+    
+    .submit-btn {
+        background-color: #3f51b5;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .submit-btn:hover {
+        background-color: #303f9f;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="character-container">
+    <h1>캐릭터 커스터마이징</h1>
+    
+    <div class="customize-form">
+        <form method="post" action="{{ url_for('character.customize') }}">
+            <div class="form-group">
+                <label for="name">캐릭터 이름</label>
+                <input type="text" id="name" name="name" value="{{ character.get('name', '') }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="appearance">외형 선택</label>
+                <select id="appearance" name="appearance">
+                    <option value="default" {% if character.get('appearance') == 'default' %}selected{% endif %}>기본</option>
+                    <option value="warrior" {% if character.get('appearance') == 'warrior' %}selected{% endif %}>전사형</option>
+                    <option value="mage" {% if character.get('appearance') == 'mage' %}selected{% endif %}>마법사형</option>
+                    <option value="archer" {% if character.get('appearance') == 'archer' %}selected{% endif %}>궁수형</option>
+                    <option value="thief" {% if character.get('appearance') == 'thief' %}selected{% endif %}>도적형</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>색상 선택</label>
+                <div class="color-picker">
+                    <div class="color-option {% if character.get('color') == '#ff5252' %}selected{% endif %}" style="background-color: #ff5252;" data-color="#ff5252"></div>
+                    <div class="color-option {% if character.get('color') == '#4285f4' %}selected{% endif %}" style="background-color: #4285f4;" data-color="#4285f4"></div>
+                    <div class="color-option {% if character.get('color') == '#0f9d58' %}selected{% endif %}" style="background-color: #0f9d58;" data-color="#0f9d58"></div>
+                    <div class="color-option {% if character.get('color') == '#fbbc05' %}selected{% endif %}" style="background-color: #fbbc05;" data-color="#fbbc05"></div>
+                    <div class="color-option {% if character.get('color') == '#9c27b0' %}selected{% endif %}" style="background-color: #9c27b0;" data-color="#9c27b0"></div>
+                    <div class="color-option {% if character.get('color') == '#3f51b5' %}selected{% endif %}" style="background-color: #3f51b5;" data-color="#3f51b5"></div>
+                </div>
+                <input type="hidden" id="color" name="color" value="{{ character.get('color', '#ff5252') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="title">칭호 선택</label>
+                <select id="title" name="title">
+                    <option value="" {% if not character.get('title') %}selected{% endif %}>없음</option>
+                    <option value="초보자" {% if character.get('title') == '초보자' %}selected{% endif %}>초보자</option>
+                    <option value="모험가" {% if character.get('title') == '모험가' %}selected{% endif %}>모험가</option>
+                    <option value="용사" {% if character.get('title') == '용사' %}selected{% endif %}>용사</option>
+                    <option value="영웅" {% if character.get('title') == '영웅' %}selected{% endif %}>영웅</option>
+                    <option value="전설" {% if character.get('title') == '전설' %}selected{% endif %}>전설</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="submit-btn">저장하기</button>
+        </form>
+    </div>
+    
+    <div class="character-actions">
+        <a href="{{ url_for('character.index') }}" class="btn">캐릭터 정보로 돌아가기</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 색상 선택 이벤트
+    const colorOptions = document.querySelectorAll('.color-option');
+    const colorInput = document.getElementById('color');
+    
+    colorOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            // 선택된 클래스 제거
+            colorOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // 현재 옵션에 선택된 클래스 추가
+            this.classList.add('selected');
+            
+            // 히든 인풋에 색상 값 설정
+            colorInput.value = this.getAttribute('data-color');
+        });
+    });
+});
+</script>
+{% endblock %}

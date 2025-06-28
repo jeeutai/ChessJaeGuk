@@ -1,0 +1,461 @@
+{% extends 'layout.html' %}
+
+{% block title %}스네이크 게임 - {{ system_config.system_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h2 class="card-title mb-0">스네이크 게임</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- 게임 설명 -->
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">게임 규칙</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>고전 스네이크 게임을 즐기세요! 방향키로 뱀을 조작하여 먹이를 먹고 뱀을 키워보세요.</p>
+                            <ul>
+                                <li>먹이를 먹으면 뱀의 길이가 늘어납니다.</li>
+                                <li>벽이나 자신의 몸에 부딪히면 게임이 종료됩니다.</li>
+                                <li>점수는 먹이를 먹을 때마다 증가합니다.</li>
+                                <li>점수에 따라 배당이 달라집니다:
+                                    <ul>
+                                        <li>50점 이상: 베팅 금액의 {{ game_config.special_win_multiplier }}배</li>
+                                        <li>20점 이상: 베팅 금액의 {{ game_config.win_multiplier }}배</li>
+                                        <li>10점 이상: 베팅 금액 돌려받음</li>
+                                        <li>10점 미만: 베팅 금액 손실</li>
+                                    </ul>
+                                </li>
+                                <li>최소 베팅 금액: {{ game_config.min_bet }}{{ currency_name }}</li>
+                                <li>최대 베팅 금액: {{ game_config.max_bet }}{{ currency_name }}</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 현재 시스템 승률 보너스: {{ (game_win_boost-1)*100 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 베팅 정보 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">베팅하기</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="betForm">
+                                <div class="form-group mb-3">
+                                    <label for="betAmount">베팅 금액 (현재 잔액: <span id="userBalance">{{ g.user.balance }}</span>{{ currency_name }})</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="betAmount" name="betAmount" min="{{ game_config.min_bet }}" max="{{ game_config.max_bet }}" value="{{ game_config.min_bet }}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">{{ currency_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary" id="startGameBtn">게임 시작</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- 결과 표시 -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">게임 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultArea" class="text-center p-3">
+                                <p class="lead">게임을 시작하세요!</p>
+                            </div>
+                            <div id="currentScore" class="text-center display-4" style="display: none;">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 게임 화면 -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">스네이크 게임</h5>
+                            <div id="scoreBoard" class="badge bg-warning text-dark" style="display: none;">
+                                점수: <span id="score">0</span>
+                            </div>
+                        </div>
+                        <div class="card-body text-center">
+                            <div id="gameNotStarted" class="my-5">
+                                <img src="/static/img/games/snake/snake.png" alt="스네이크 게임" class="img-fluid mb-3" style="max-height: 200px;">
+                                <h3>베팅 후 게임을 시작하세요!</h3>
+                                <p class="text-muted">방향키로 뱀을 조작하여 먹이를 먹고 성장시키세요.</p>
+                            </div>
+                            
+                            <canvas id="snakeCanvas" width="400" height="400" style="border:2px solid #000; display: none;"></canvas>
+                            
+                            <div class="mt-3">
+                                <div id="controls" class="d-none d-md-block" style="display: none;">
+                                    <p class="mb-2">키보드 방향키를 사용하여 뱀을 조작하세요</p>
+                                </div>
+                                
+                                <!-- 모바일 방향키 컨트롤 -->
+                                <div id="mobileControls" class="d-md-none my-3" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-12 text-center mb-2">
+                                            <button id="upBtn" class="btn btn-lg btn-outline-primary control-btn">
+                                                <i class="fas fa-arrow-up"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-4 text-right">
+                                            <button id="leftBtn" class="btn btn-lg btn-outline-primary control-btn">
+                                                <i class="fas fa-arrow-left"></i>
+                                            </button>
+                                        </div>
+                                        <div class="col-4">
+                                            <!-- 중앙 공백 -->
+                                        </div>
+                                        <div class="col-4 text-left">
+                                            <button id="rightBtn" class="btn btn-lg btn-outline-primary control-btn">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12 text-center mt-2">
+                                            <button id="downBtn" class="btn btn-lg btn-outline-primary control-btn">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let gameInProgress = false;
+    let canvas, ctx;
+    let snake, food;
+    let dx = 10, dy = 0;
+    let score = 0;
+    let gameInterval;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        canvas = document.getElementById('snakeCanvas');
+        ctx = canvas.getContext('2d');
+        
+        // 이벤트 리스너 설정
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        
+        // 키보드 이벤트 설정
+        document.addEventListener('keydown', changeDirection);
+        
+        // 모바일 컨트롤 이벤트 설정
+        document.getElementById('upBtn').addEventListener('click', () => setDirection('up'));
+        document.getElementById('leftBtn').addEventListener('click', () => setDirection('left'));
+        document.getElementById('rightBtn').addEventListener('click', () => setDirection('right'));
+        document.getElementById('downBtn').addEventListener('click', () => setDirection('down'));
+    });
+    
+    function startGame() {
+        if (gameInProgress) return;
+        
+        const betAmount = parseInt(document.getElementById('betAmount').value);
+        if (betAmount < {{ game_config.min_bet }} || betAmount > {{ game_config.max_bet }}) {
+            showToast('베팅 금액은 {{ game_config.min_bet }} ~ {{ game_config.max_bet }} 사이여야 합니다.', 'error');
+            return;
+        }
+        
+        if (betAmount > parseInt(document.getElementById('userBalance').textContent)) {
+            showToast('잔액이 부족합니다.', 'error');
+            return;
+        }
+        
+        // 게임 상태 변경
+        gameInProgress = true;
+        document.getElementById('startGameBtn').disabled = true;
+        document.getElementById('startGameBtn').textContent = '게임 진행 중...';
+        
+        // 게임 UI 표시
+        document.getElementById('gameNotStarted').style.display = 'none';
+        document.getElementById('snakeCanvas').style.display = 'block';
+        document.getElementById('controls').style.display = 'block';
+        document.getElementById('mobileControls').style.display = 'block';
+        document.getElementById('scoreBoard').style.display = 'inline-block';
+        document.getElementById('currentScore').style.display = 'block';
+        
+        // 게임 초기화
+        snake = [
+            {x: 200, y: 200},
+            {x: 190, y: 200},
+            {x: 180, y: 200},
+            {x: 170, y: 200},
+            {x: 160, y: 200}
+        ];
+        
+        // 먹이 위치 생성
+        createFood();
+        
+        // 방향 초기화
+        dx = 10;
+        dy = 0;
+        
+        // 점수 초기화
+        score = 0;
+        document.getElementById('score').textContent = score;
+        document.getElementById('currentScore').textContent = score;
+        
+        // 게임 루프 시작
+        clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, 100);
+    }
+    
+    function createFood() {
+        // 먹이 위치를 그리드에 맞춰 랜덤하게 생성
+        food = {
+            x: Math.floor(Math.random() * (canvas.width / 10)) * 10,
+            y: Math.floor(Math.random() * (canvas.height / 10)) * 10
+        };
+        
+        // 뱀의 몸과 겹치지 않는지 확인
+        for (let i = 0; i < snake.length; i++) {
+            if (snake[i].x === food.x && snake[i].y === food.y) {
+                createFood(); // 겹치면 다시 생성
+                break;
+            }
+        }
+    }
+    
+    function gameLoop() {
+        // 캔버스 지우기
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 뱀 이동
+        const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+        snake.unshift(head);
+        
+        // 벽에 부딪혔는지 확인
+        if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+            endGame();
+            return;
+        }
+        
+        // 자신의 몸에 부딪혔는지 확인
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                endGame();
+                return;
+            }
+        }
+        
+        // 먹이를 먹었는지 확인
+        if (head.x === food.x && head.y === food.y) {
+            // 점수 증가
+            score++;
+            document.getElementById('score').textContent = score;
+            document.getElementById('currentScore').textContent = score;
+            
+            // 새 먹이 생성
+            createFood();
+        } else {
+            // 꼬리 제거 (먹이를 먹지 않았을 때만)
+            snake.pop();
+        }
+        
+        // 뱀 그리기
+        drawSnake();
+        
+        // 먹이 그리기
+        drawFood();
+    }
+    
+    function drawSnake() {
+        for (let i = 0; i < snake.length; i++) {
+            // 머리는 다른 색상으로
+            if (i === 0) {
+                ctx.fillStyle = '#4CAF50';
+            } else {
+                // 몸통은 그라데이션 색상
+                const colorValue = 255 - (i * 10);
+                ctx.fillStyle = `rgb(0, ${Math.max(colorValue, 100)}, 0)`;
+            }
+            
+            ctx.fillRect(snake[i].x, snake[i].y, 10, 10);
+            
+            // 테두리 추가
+            ctx.strokeStyle = '#000';
+            ctx.strokeRect(snake[i].x, snake[i].y, 10, 10);
+        }
+    }
+    
+    function drawFood() {
+        ctx.beginPath();
+        ctx.arc(food.x + 5, food.y + 5, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#FF0000';
+        ctx.fill();
+        ctx.closePath();
+    }
+    
+    function changeDirection(event) {
+        if (!gameInProgress) return;
+        
+        const LEFT_KEY = 37;
+        const RIGHT_KEY = 39;
+        const UP_KEY = 38;
+        const DOWN_KEY = 40;
+        
+        const keyPressed = event.keyCode;
+        
+        if (keyPressed === LEFT_KEY && dx !== 10) {
+            dx = -10;
+            dy = 0;
+        }
+        
+        if (keyPressed === UP_KEY && dy !== 10) {
+            dx = 0;
+            dy = -10;
+        }
+        
+        if (keyPressed === RIGHT_KEY && dx !== -10) {
+            dx = 10;
+            dy = 0;
+        }
+        
+        if (keyPressed === DOWN_KEY && dy !== -10) {
+            dx = 0;
+            dy = 10;
+        }
+    }
+    
+    function setDirection(direction) {
+        if (!gameInProgress) return;
+        
+        if (direction === 'left' && dx !== 10) {
+            dx = -10;
+            dy = 0;
+        } else if (direction === 'up' && dy !== 10) {
+            dx = 0;
+            dy = -10;
+        } else if (direction === 'right' && dx !== -10) {
+            dx = 10;
+            dy = 0;
+        } else if (direction === 'down' && dy !== -10) {
+            dx = 0;
+            dy = 10;
+        }
+    }
+    
+    function endGame() {
+        clearInterval(gameInterval);
+        gameInProgress = false;
+        
+        // 결과 메시지
+        let resultMessage;
+        let resultClass;
+        
+        if (score >= 50) {
+            resultMessage = `대박 승리! 점수: ${score}`;
+            resultClass = 'success';
+        } else if (score >= 20) {
+            resultMessage = `승리! 점수: ${score}`;
+            resultClass = 'success';
+        } else if (score >= 10) {
+            resultMessage = `좋은 시도! 점수: ${score}`;
+            resultClass = 'warning';
+        } else {
+            resultMessage = `아쉽네요. 점수: ${score}`;
+            resultClass = 'danger';
+        }
+        
+        // 결과 표시
+        document.getElementById('resultArea').innerHTML = `
+            <div class="alert alert-${resultClass}">
+                <h4>${resultMessage}</h4>
+                <p>결과 처리 중...</p>
+            </div>
+        `;
+        
+        // 게임 버튼 비활성화 유지
+        document.getElementById('startGameBtn').disabled = true;
+        document.getElementById('startGameBtn').textContent = '결과 처리 중...';
+        
+        // 서버에 결과 전송
+        submitGameResult();
+    }
+    
+    function submitGameResult() {
+        const betAmount = parseInt(document.getElementById('betAmount').value);
+        
+        fetch('/games/bet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'game_id': 'snake',
+                'bet_amount': betAmount,
+                'game_data': score.toString()
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 결과 표시
+                document.getElementById('resultArea').innerHTML = `
+                    <h4>${data.message}</h4>
+                    <p>새 잔액: ${data.new_balance}{{ currency_name }}</p>
+                `;
+                
+                // 사용자 잔액 업데이트
+                document.getElementById('userBalance').textContent = data.new_balance;
+                
+                // 게임 버튼 재활성화
+                document.getElementById('startGameBtn').disabled = false;
+                document.getElementById('startGameBtn').textContent = '다시 게임 시작';
+                
+                // 토스트 메시지 표시
+                showToast(data.message, data.result.includes('win') ? 'success' : 'error');
+            } else {
+                showToast(data.message, 'error');
+                
+                // 게임 버튼 재활성화
+                document.getElementById('startGameBtn').disabled = false;
+                document.getElementById('startGameBtn').textContent = '다시 게임 시작';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+            
+            // 게임 버튼 재활성화
+            document.getElementById('startGameBtn').disabled = false;
+            document.getElementById('startGameBtn').textContent = '다시 게임 시작';
+        });
+    }
+</script>
+
+<style>
+    .control-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 1.5rem;
+    }
+    
+    #currentScore {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+</style>
+{% endblock %}

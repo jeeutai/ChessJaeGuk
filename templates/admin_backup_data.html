@@ -1,0 +1,235 @@
+{% extends 'admin.html' %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 백업 생성 카드 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">데이터 백업 생성</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.backup_data') }}" method="post">
+                        <div class="mb-3">
+                            <label for="backup_name" class="form-label">백업 이름</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="backup_name" name="backup_name" value="backup_{{ current_timestamp }}" required>
+                                <span class="input-group-text">.zip</span>
+                            </div>
+                            <div class="form-text">백업 파일의 이름을 입력하세요. 기본값은 현재 날짜/시간을 기준으로 설정됩니다.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_all" name="include_all" value="1" checked>
+                                <label class="form-check-label" for="include_all">모든 데이터 포함</label>
+                            </div>
+                        </div>
+                        
+                        <div id="specificDataSelection" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">백업할 데이터 선택</label>
+                                <div class="row">
+                                    {% for key, path in csv_files.items() %}
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="file_{{ key }}" name="files[]" value="{{ key }}">
+                                            <label class="form-check-label" for="file_{{ key }}">
+                                                {{ key }}.csv
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_metadata" name="include_metadata" value="1" checked>
+                                <label class="form-check-label" for="include_metadata">메타데이터 포함</label>
+                            </div>
+                            <div class="form-text">백업 일시, 백업된 파일 목록, 시스템 버전 등의 메타데이터를 포함합니다.</div>
+                        </div>
+                        
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-download"></i> 백업 생성
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 백업 설정 카드 -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">백업 설정</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin.backup_data') }}" method="post">
+                        <input type="hidden" name="set_backup_config" value="1">
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enable_auto_backup" name="enable_auto_backup" value="1" {% if backup_config.get('enable_auto_backup') == 'True' %}checked{% endif %}>
+                                <label class="form-check-label" for="enable_auto_backup">자동 백업 활성화</label>
+                            </div>
+                            <div class="form-text">시스템이 자동으로 정기적인 백업을 생성합니다.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="auto_backup_interval" class="form-label">자동 백업 주기 (시간)</label>
+                            <input type="number" class="form-control" id="auto_backup_interval" name="auto_backup_interval" min="1" max="168" value="{{ backup_config.get('auto_backup_interval', '24') }}">
+                            <div class="form-text">자동 백업 사이의 시간 간격을 지정합니다.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_backups" class="form-label">최대 백업 파일 수</label>
+                            <input type="number" class="form-control" id="max_backups" name="max_backups" min="1" max="100" value="{{ backup_config.get('max_backups', '10') }}">
+                            <div class="form-text">저장할 최대 백업 파일 수를 지정합니다. 이 수를 초과하면 가장 오래된 백업이 자동으로 삭제됩니다.</div>
+                        </div>
+                        
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 설정 저장
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 기존 백업 목록 카드 -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">기존 백업 목록</h4>
+                </div>
+                <div class="card-body">
+                    {% if backup_files %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>파일명</th>
+                                    <th>생성일시</th>
+                                    <th>크기</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in backup_files %}
+                                <tr>
+                                    <td>{{ backup.name }}</td>
+                                    <td>{{ backup.created_at }}</td>
+                                    <td>{{ backup.size }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin.download_backup', filename=backup.name) }}" class="btn btn-primary">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-danger delete-backup" data-filename="{{ backup.name }}" data-bs-toggle="modal" data-bs-target="#deleteBackupModal">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 생성된 백업 파일이 없습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 백업 상태 카드 -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">백업 상태</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            마지막 백업
+                            <span class="badge bg-primary">{{ backup_status.last_backup or '없음' }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            다음 자동 백업
+                            <span class="badge bg-success">{{ backup_status.next_backup or '자동 백업 비활성화' }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            총 백업 파일
+                            <span class="badge bg-secondary">{{ backup_files|length if backup_files else 0 }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            사용된 백업 공간
+                            <span class="badge bg-info">{{ backup_status.total_size or '0 KB' }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 백업 삭제 확인 모달 -->
+<div class="modal fade" id="deleteBackupModal" tabindex="-1" aria-labelledby="deleteBackupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteBackupModalLabel">백업 삭제 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>다음 백업 파일을 정말로 삭제하시겠습니까?</p>
+                <p><strong id="deleteBackupName"></strong></p>
+                <p class="text-danger">이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form id="deleteBackupForm" action="{{ url_for('admin.delete_backup') }}" method="post">
+                    <input type="hidden" id="delete_filename" name="filename" value="">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 모든 데이터 포함 체크박스 변경 이벤트
+    const includeAllCheckbox = document.getElementById('include_all');
+    const specificDataSelection = document.getElementById('specificDataSelection');
+    
+    includeAllCheckbox.addEventListener('change', function() {
+        specificDataSelection.style.display = this.checked ? 'none' : 'block';
+        
+        // 모든 데이터 포함이 체크되면 개별 파일 체크박스 모두 해제
+        if (this.checked) {
+            document.querySelectorAll('input[name="files[]"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+    });
+    
+    // 백업 삭제 모달 설정
+    const deleteButtons = document.querySelectorAll('.delete-backup');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filename = this.getAttribute('data-filename');
+            document.getElementById('deleteBackupName').textContent = filename;
+            document.getElementById('delete_filename').value = filename;
+        });
+    });
+});
+</script>
+{% endblock %}

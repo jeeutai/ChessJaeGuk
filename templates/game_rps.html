@@ -1,0 +1,343 @@
+{% extends 'layout.html' %}
+
+{% block title %}가위바위보 게임 - {{ system_config.system_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">가위바위보 게임</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- 게임 설명 -->
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">게임 규칙</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>컴퓨터와 가위바위보 게임을 즐겨보세요!</p>
+                            <ul>
+                                <li>베팅 금액을 설정하고 가위, 바위, 보 중 하나를 선택하세요.</li>
+                                <li>이기면 베팅 금액의 {{ game_config.win_multiplier }}배를 얻습니다.</li>
+                                <li>비기면 베팅 금액을 돌려받습니다.</li>
+                                <li>지면 베팅 금액을 잃습니다.</li>
+                                <li>최소 베팅 금액: {{ game_config.min_bet }}{{ currency_name }}</li>
+                                <li>최대 베팅 금액: {{ game_config.max_bet }}{{ currency_name }}</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 현재 시스템 승률 보너스: {{ (game_win_boost-1)*100 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 베팅 정보 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">베팅하기</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="betForm">
+                                <div class="form-group mb-3">
+                                    <label for="betAmount">베팅 금액 (현재 잔액: <span id="userBalance">{{ g.user.balance }}</span>{{ currency_name }})</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="betAmount" name="betAmount" min="{{ game_config.min_bet }}" max="{{ game_config.max_bet }}" value="{{ game_config.min_bet }}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">{{ currency_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary" id="quickBetButton" disabled>게임 중입니다...</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- 결과 표시 -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">게임 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultArea" class="text-center p-3">
+                                <p class="lead">가위, 바위, 보 중 하나를 선택하세요!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 게임 화면 -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">가위바위보 게임</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <h3>컴퓨터의 선택</h3>
+                                    <div id="computerChoice" class="my-4">
+                                        <img src="/static/img/games/rps/question.png" alt="미정" class="img-fluid" style="max-height: 150px;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <h3>당신의 선택</h3>
+                                    <div class="d-flex justify-content-center my-4">
+                                        <div class="mx-2">
+                                            <button id="scissorsBtn" class="btn btn-outline-primary btn-lg choice-btn">
+                                                <img src="/static/img/games/rps/scissors.png" alt="가위" class="img-fluid" style="max-height: 100px;">
+                                                <p class="mt-2">가위</p>
+                                            </button>
+                                        </div>
+                                        <div class="mx-2">
+                                            <button id="rockBtn" class="btn btn-outline-primary btn-lg choice-btn">
+                                                <img src="/static/img/games/rps/rock.png" alt="바위" class="img-fluid" style="max-height: 100px;">
+                                                <p class="mt-2">바위</p>
+                                            </button>
+                                        </div>
+                                        <div class="mx-2">
+                                            <button id="paperBtn" class="btn btn-outline-primary btn-lg choice-btn">
+                                                <img src="/static/img/games/rps/paper.png" alt="보" class="img-fluid" style="max-height: 100px;">
+                                                <p class="mt-2">보</p>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-12 text-center">
+                                    <div id="vsDisplay" class="display-4 my-3" style="display: none;">VS</div>
+                                    <div id="resultDisplay" class="alert alert-info" style="display: none;">
+                                        결과가 여기에 표시됩니다.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let gameInProgress = false;
+    let userChoice = '';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // 베팅 버튼 활성화
+        document.getElementById('quickBetButton').disabled = false;
+        document.getElementById('quickBetButton').textContent = '베팅하고 선택하기';
+        
+        // 클릭 이벤트 설정
+        document.getElementById('quickBetButton').addEventListener('click', function() {
+            const betAmount = parseInt(document.getElementById('betAmount').value);
+            if (betAmount < {{ game_config.min_bet }} || betAmount > {{ game_config.max_bet }}) {
+                showToast('베팅 금액은 {{ game_config.min_bet }} ~ {{ game_config.max_bet }} 사이여야 합니다.', 'error');
+                return;
+            }
+            
+            if (betAmount > parseInt(document.getElementById('userBalance').textContent)) {
+                showToast('잔액이 부족합니다.', 'error');
+                return;
+            }
+            
+            // 베팅 버튼 비활성화 및 안내 메시지
+            this.disabled = true;
+            this.textContent = '선택하세요...';
+            
+            // 가위바위보 버튼 하이라이트
+            const choiceBtns = document.querySelectorAll('.choice-btn');
+            choiceBtns.forEach(btn => {
+                btn.classList.add('btn-pulse');
+            });
+            
+            gameInProgress = true;
+            
+            // 결과 영역 초기화
+            document.getElementById('resultArea').innerHTML = '<p class="lead">가위, 바위, 보 중 하나를 선택하세요!</p>';
+            document.getElementById('computerChoice').innerHTML = '<img src="/static/img/games/rps/question.png" alt="미정" class="img-fluid" style="max-height: 150px;">';
+            document.getElementById('vsDisplay').style.display = 'none';
+            document.getElementById('resultDisplay').style.display = 'none';
+        });
+        
+        // 가위바위보 선택 버튼 이벤트
+        document.querySelectorAll('.choice-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                if (!gameInProgress) {
+                    showToast('먼저 베팅을 해주세요.', 'warning');
+                    return;
+                }
+                
+                // 사용자 선택 저장
+                if (this.id === 'scissorsBtn') userChoice = 'scissors';
+                else if (this.id === 'rockBtn') userChoice = 'rock';
+                else if (this.id === 'paperBtn') userChoice = 'paper';
+                
+                // 선택 버튼 강조
+                document.querySelectorAll('.choice-btn').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                    btn.classList.remove('btn-pulse');
+                });
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+                
+                // VS 표시
+                document.getElementById('vsDisplay').style.display = 'block';
+                
+                // 컴퓨터 선택 애니메이션
+                animateComputerChoice();
+            });
+        });
+    });
+    
+    function animateComputerChoice() {
+        const choices = ['rock', 'paper', 'scissors'];
+        let counter = 0;
+        const interval = setInterval(() => {
+            const randomIndex = counter % 3;
+            document.getElementById('computerChoice').innerHTML = 
+                `<img src="/static/img/games/rps/${choices[randomIndex]}.png" alt="${choices[randomIndex]}" class="img-fluid" style="max-height: 150px;">`;
+            counter++;
+            
+            if (counter > 10) {
+                clearInterval(interval);
+                determineWinner();
+            }
+        }, 100);
+    }
+    
+    function determineWinner() {
+        const choices = ['rock', 'paper', 'scissors'];
+        const computerIndex = Math.floor(Math.random() * 3);
+        const computerChoice = choices[computerIndex];
+        
+        document.getElementById('computerChoice').innerHTML = 
+            `<img src="/static/img/games/rps/${computerChoice}.png" alt="${computerChoice}" class="img-fluid" style="max-height: 150px;">`;
+        
+        let result;
+        let gameResult;
+        
+        if (userChoice === computerChoice) {
+            // 무승부
+            result = 'draw';
+            gameResult = '무승부!';
+            document.getElementById('resultDisplay').className = 'alert alert-warning';
+        } else if (
+            (userChoice === 'rock' && computerChoice === 'scissors') ||
+            (userChoice === 'paper' && computerChoice === 'rock') ||
+            (userChoice === 'scissors' && computerChoice === 'paper')
+        ) {
+            // 승리
+            result = 'win';
+            gameResult = '승리!';
+            document.getElementById('resultDisplay').className = 'alert alert-success';
+        } else {
+            // 패배
+            result = 'lose';
+            gameResult = '패배!';
+            document.getElementById('resultDisplay').className = 'alert alert-danger';
+        }
+        
+        document.getElementById('resultDisplay').textContent = gameResult;
+        document.getElementById('resultDisplay').style.display = 'block';
+        
+        // 서버에 결과 전송
+        submitGameResult(result);
+    }
+    
+    function submitGameResult(result) {
+        const betAmount = parseInt(document.getElementById('betAmount').value);
+        
+        // 서버에 베팅 결과 전송
+        fetch('/games/bet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'game_id': 'rps',
+                'bet_amount': betAmount,
+                'game_data': result
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 결과 표시
+                document.getElementById('resultArea').innerHTML = `
+                    <h4>${data.message}</h4>
+                    <p>새 잔액: ${data.new_balance}{{ currency_name }}</p>
+                `;
+                
+                // 사용자 잔액 업데이트
+                document.getElementById('userBalance').textContent = data.new_balance;
+                
+                // 베팅 버튼 재활성화
+                document.getElementById('quickBetButton').disabled = false;
+                document.getElementById('quickBetButton').textContent = '다시 베팅하기';
+                
+                // 토스트 메시지 표시
+                showToast(data.message, data.result === 'win' ? 'success' : (data.result === 'draw' ? 'info' : 'error'));
+            } else {
+                showToast(data.message, 'error');
+                
+                // 베팅 버튼 재활성화
+                document.getElementById('quickBetButton').disabled = false;
+                document.getElementById('quickBetButton').textContent = '베팅하고 선택하기';
+            }
+            
+            // 게임 상태 리셋
+            gameInProgress = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+            
+            // 베팅 버튼 재활성화
+            document.getElementById('quickBetButton').disabled = false;
+            document.getElementById('quickBetButton').textContent = '베팅하고 선택하기';
+            
+            // 게임 상태 리셋
+            gameInProgress = false;
+        });
+    }
+</script>
+
+<style>
+    .btn-pulse {
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+    
+    .choice-btn {
+        transition: all 0.3s;
+        border-radius: 10px;
+        padding: 10px;
+    }
+    
+    .choice-btn:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

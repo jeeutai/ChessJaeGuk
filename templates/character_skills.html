@@ -1,0 +1,120 @@
+<!-- character_skills.html -->
+{% extends 'base.html' %}
+
+{% block title %}캐릭터 스킬 관리{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>캐릭터 스킬 관리</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>캐릭터 정보</h2>
+        </div>
+        <div class="card-body">
+            {% if character %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>레벨:</strong> {{ character.level|default('1') }}</p>
+                    <p><strong>스킬 포인트:</strong> {{ character.skill_points|default('0') }}</p>
+                    <p><strong>직업:</strong> {{ character.class_name|default('초보자') }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p>캐릭터 정보를 불러올 수 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 습득한 스킬 목록 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>습득한 스킬</h2>
+        </div>
+        <div class="card-body">
+            {% if user_skills and user_skills|length > 0 %}
+            <div class="row">
+                {% for skill in user_skills %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ skill.name }}</h5>
+                            <p class="card-text">{{ skill.description }}</p>
+                            <p><small>효과: {{ skill.effect_description }}</small></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>습득한 스킬이 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 습득 가능한 스킬 목록 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>습득 가능한 스킬</h2>
+        </div>
+        <div class="card-body">
+            {% if available_skills and available_skills|length > 0 %}
+            <div class="row">
+                {% for skill in available_skills %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ skill.name }}</h5>
+                            <p class="card-text">{{ skill.description }}</p>
+                            <p><small>필요 레벨: {{ skill.required_level }}</small></p>
+                            <p><small>비용: {{ skill.cost }} {{ currency_name }}</small></p>
+                            <form action="{{ url_for('character.learn_skill') }}" method="post">
+                                <input type="hidden" name="skill_id" value="{{ skill.id }}">
+                                <button type="submit" class="btn btn-primary">스킬 습득</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>현재 습득 가능한 스킬이 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 직업 스킬 정보 -->
+    {% if class_info %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>{{ class_info.name }} 직업 스킬</h2>
+        </div>
+        <div class="card-body">
+            <p>{{ class_info.description }}</p>
+            
+            {% if class_info.skills and class_info.skills|length > 0 %}
+            <div class="row mt-3">
+                {% for skill in class_info.skills %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ skill.name }}</h5>
+                            <p class="card-text">{{ skill.description }}</p>
+                            <p><small>MP 소모: {{ skill.mp_cost }}</small></p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>이 직업의 스킬 정보가 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mt-4">
+        <a href="{{ url_for('character.index') }}" class="btn btn-secondary">캐릭터 정보로 돌아가기</a>
+    </div>
+</div>
+{% endblock %}

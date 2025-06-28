@@ -1,0 +1,247 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h2 class="mb-0"><i class="fas fa-comments me-2"></i>체스제국 채팅</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- 채팅 사이드바 -->
+                <div class="col-md-3 border-end">
+                    <div class="chat-sidebar p-3">
+                        <div class="user-profile mb-4">
+                            <div class="d-flex align-items-center">
+                                <div class="profile-avatar me-3">
+                                    <i class="fas fa-user-circle fa-3x text-primary"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0">{{ g.user.nickname }}</h5>
+                                    <small class="text-muted">{{ g.user.id }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-rooms">
+                            <h5 class="mb-3">채팅방</h5>
+                            <div class="list-group">
+                                <a href="#" class="list-group-item list-group-item-action active d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-users me-2"></i>
+                                        전체 채팅
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">라이브</span>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-gamepad me-2"></i>
+                                        게임 채팅
+                                    </div>
+                                    <span class="badge bg-secondary rounded-pill">준비중</span>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        주식 채팅
+                                    </div>
+                                    <span class="badge bg-secondary rounded-pill">준비중</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="online-users mt-4">
+                            <h5 class="mb-3">현재 접속자</h5>
+                            <div class="list-group" id="online-users-list">
+                                <!-- 접속자 목록은 js로 동적 생성 -->
+                                <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                        <div class="online-indicator me-2">
+                                            <span class="badge bg-success rounded-circle">&nbsp;</span>
+                                        </div>
+                                        <div>관리자</div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                        <div class="online-indicator me-2">
+                                            <span class="badge bg-success rounded-circle">&nbsp;</span>
+                                        </div>
+                                        <div>{{ g.user.nickname }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 채팅 메인 영역 -->
+                <div class="col-md-9">
+                    <div class="chat-main">
+                        <!-- 채팅 메시지 영역 -->
+                        <div class="chat-messages p-3" id="chat-messages">
+                            {% for msg in messages %}
+                            <div class="message-container {% if msg.is_current_user %}message-mine{% else %}message-other{% endif %} mb-3">
+                                <div class="message-header">
+                                    <strong class="message-sender">
+                                        {% if msg.is_admin == 'True' %}
+                                        <i class="fas fa-crown text-warning me-1"></i>
+                                        {% endif %}
+                                        {{ msg.username }}
+                                    </strong>
+                                    <small class="text-muted">{{ msg.timestamp }}</small>
+                                </div>
+                                <div class="message-bubble p-2 rounded">
+                                    {{ msg.message }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- 채팅 입력 영역 -->
+                        <div class="chat-input border-top p-3">
+                            <form id="chat-form">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="message-input" placeholder="메시지를 입력하세요..." autofocus>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // 마지막으로 확인한 메시지 시간
+    let lastCheckTime = new Date().toISOString();
+    
+    // 메시지 스크롤 맨 아래로
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // 초기 로드 시 스크롤 맨 아래로
+    scrollToBottom();
+    
+    // 채팅 메시지 추가 함수
+    function addMessage(msg) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message-container ${msg.is_current_user ? 'message-mine' : 'message-other'} mb-3`;
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <strong class="message-sender">
+                    ${msg.is_admin === 'True' ? '<i class="fas fa-crown text-warning me-1"></i>' : ''}
+                    ${msg.username}
+                </strong>
+                <small class="text-muted">${msg.timestamp}</small>
+            </div>
+            <div class="message-bubble p-2 rounded">
+                ${msg.message}
+            </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    // 채팅 폼 제출 처리
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (!message) return;
+        
+        // 서버로 메시지 전송
+        fetch('{{ url_for("chat.send_message") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `message=${encodeURIComponent(message)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 메시지 입력창 초기화
+                messageInput.value = '';
+                // 새 메시지 추가
+                addMessage(data.msg);
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('메시지 전송 중 오류가 발생했습니다.', 'error');
+        });
+    });
+    
+    // 주기적으로 새 메시지 확인
+    function checkNewMessages() {
+        fetch(`{{ url_for("chat.update_messages") }}?last_time=${encodeURIComponent(lastCheckTime)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.messages.length > 0) {
+                // 새 메시지 추가
+                data.messages.forEach(msg => {
+                    if (!msg.is_current_user) { // 내가 보낸 메시지는 이미 추가했으므로 제외
+                        addMessage(msg);
+                    }
+                });
+                
+                // 마지막 확인 시간 업데이트
+                if (data.messages.length > 0) {
+                    lastCheckTime = data.messages[data.messages.length - 1].timestamp;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    
+    // 5초마다 새 메시지 확인
+    setInterval(checkNewMessages, 5000);
+    
+    // 토스트 알림 표시
+    function showToast(message, type) {
+        const toastContainer = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'info' ? 'info' : 'success'} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    }
+});
+</script>
+{% endblock %}

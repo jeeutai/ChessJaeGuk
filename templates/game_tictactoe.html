@@ -1,0 +1,673 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .tictactoe-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .cell {
+    background-color: #f0f0f0;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .cell:hover {
+    background-color: #e0e0e0;
+    transform: scale(1.02);
+  }
+  
+  .cell.x {
+    color: #D32F2F;
+    background-color: #FFEBEE;
+  }
+  
+  .cell.o {
+    color: #1976D2;
+    background-color: #E3F2FD;
+  }
+  
+  .cell.winning {
+    background-color: #C8E6C9;
+    animation: pulse 1s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  .game-status {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .your-turn {
+    background-color: #FFECB3;
+    color: #F57F17;
+  }
+  
+  .ai-turn {
+    background-color: #E3F2FD;
+    color: #1565C0;
+  }
+  
+  .win {
+    background-color: #C8E6C9;
+    color: #2E7D32;
+  }
+  
+  .lose {
+    background-color: #FFCDD2;
+    color: #C62828;
+  }
+  
+  .draw {
+    background-color: #E0E0E0;
+    color: #424242;
+  }
+  
+  .bet-controls {
+    margin-bottom: 20px;
+  }
+  
+  .difficulty-selector {
+    margin-bottom: 20px;
+  }
+  
+  .player-choice {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+  }
+  
+  .player-option {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .player-option.x {
+    background-color: #FFEBEE;
+    color: #D32F2F;
+  }
+  
+  .player-option.o {
+    background-color: #E3F2FD;
+    color: #1976D2;
+  }
+  
+  .player-option:hover {
+    transform: scale(1.05);
+  }
+  
+  .player-option.selected {
+    box-shadow: 0 0 0 4px #FFD700;
+  }
+  
+  .score-display {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    font-size: 1.2rem;
+  }
+  
+  .score-item {
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    min-width: 100px;
+  }
+  
+  .your-score {
+    background-color: #FFEBEE;
+    color: #D32F2F;
+  }
+  
+  .ai-score {
+    background-color: #E3F2FD;
+    color: #1976D2;
+  }
+  
+  .draws {
+    background-color: #E0E0E0;
+    color: #424242;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-warning text-dark">
+      <h2 class="mb-0"><i class="fas fa-th me-2"></i>틱택토 게임</h2>
+    </div>
+    <div class="card-body">
+      <div class="balance-display mb-3 p-3 bg-light rounded">
+        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold" id="user-balance">{{ g.user.balance }}원</span></h5>
+      </div>
+      
+      <div class="tictactoe-container">
+        <!-- 베팅 영역 -->
+        <div class="bet-controls" id="bet-container">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h4 class="mb-0"><i class="fas fa-coins me-2"></i>베팅하기</h4>
+            </div>
+            <div class="card-body">
+              <form id="bet-form">
+                <div class="mb-3">
+                  <label for="bet-amount" class="form-label">베팅 금액</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="bet-amount" min="100" max="{{ g.user.balance }}" value="100" required>
+                    <span class="input-group-text">원</span>
+                  </div>
+                  <div class="form-text">최소 100원부터 베팅 가능합니다.</div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">난이도 선택</label>
+                  <select class="form-select" id="difficulty">
+                    <option value="easy">쉬움</option>
+                    <option value="medium" selected>보통</option>
+                    <option value="hard">어려움</option>
+                  </select>
+                </div>
+                
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-success btn-lg">게임 시작</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 게임 영역 -->
+        <div id="game-container" style="display: none;">
+          <!-- 선택 영역 -->
+          <div class="player-choice" id="player-choice">
+            <h5 class="me-3 mb-0 align-self-center">선택:</h5>
+            <div class="player-option x selected" data-choice="x">X</div>
+            <div class="player-option o" data-choice="o">O</div>
+          </div>
+          
+          <!-- 게임 상태 -->
+          <div class="game-status your-turn" id="game-status">게임을 시작합니다! 당신의 차례입니다.</div>
+          
+          <!-- 게임 보드 -->
+          <div class="game-board" id="game-board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+          </div>
+          
+          <!-- 점수판 -->
+          <div class="score-display">
+            <div class="score-item your-score">
+              <div>나</div>
+              <div id="player-score">0</div>
+            </div>
+            <div class="score-item draws">
+              <div>무승부</div>
+              <div id="draws">0</div>
+            </div>
+            <div class="score-item ai-score">
+              <div>컴퓨터</div>
+              <div id="ai-score">0</div>
+            </div>
+          </div>
+          
+          <!-- 게임 컨트롤 -->
+          <div class="mt-4 text-center">
+            <button id="new-game-btn" class="btn btn-primary">새 게임</button>
+            <button id="end-game-btn" class="btn btn-danger">게임 종료</button>
+          </div>
+        </div>
+        
+        <!-- 게임 설명 -->
+        <div class="card mt-4">
+          <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>게임 방법</h4>
+          </div>
+          <div class="card-body">
+            <ol>
+              <li>베팅 금액과 난이도를 선택하고 "게임 시작" 버튼을 클릭합니다.</li>
+              <li>X 또는 O를 선택하고 게임을 진행합니다.</li>
+              <li>가로, 세로, 대각선으로 3개의 같은 기호를 연결하면 승리합니다.</li>
+              <li>승리 시: 베팅 금액의 2배 획득</li>
+              <li>무승부 시: 베팅 금액 그대로 돌려받음</li>
+              <li>패배 시: 베팅 금액 잃음</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const betContainer = document.getElementById('bet-container');
+    const gameContainer = document.getElementById('game-container');
+    const gameBoard = document.getElementById('game-board');
+    const gameStatus = document.getElementById('game-status');
+    const playerChoice = document.getElementById('player-choice');
+    const playerOptions = document.querySelectorAll('.player-option');
+    const betForm = document.getElementById('bet-form');
+    const newGameBtn = document.getElementById('new-game-btn');
+    const endGameBtn = document.getElementById('end-game-btn');
+    const cells = document.querySelectorAll('.cell');
+    const playerScoreEl = document.getElementById('player-score');
+    const aiScoreEl = document.getElementById('ai-score');
+    const drawsEl = document.getElementById('draws');
+    const userBalance = document.getElementById('user-balance');
+    
+    let betAmount = 0;
+    let difficulty = 'medium';
+    let board = Array(9).fill('');
+    let currentPlayer = 'x';
+    let playerSymbol = 'x';
+    let aiSymbol = 'o';
+    let gameActive = false;
+    let playerScore = 0;
+    let aiScore = 0;
+    let draws = 0;
+    
+    // 베팅 폼 제출
+    betForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      betAmount = parseInt(document.getElementById('bet-amount').value);
+      difficulty = document.getElementById('difficulty').value;
+      
+      if (isNaN(betAmount) || betAmount < 100) {
+        alert('최소 100원 이상 베팅해야 합니다.');
+        return;
+      }
+      
+      if (betAmount > parseInt(userBalance.textContent.replace(/[^0-9]/g, ''))) {
+        alert('잔액이 부족합니다.');
+        return;
+      }
+      
+      // 게임 시작
+      startGame();
+    });
+    
+    // 플레이어 선택 (X 또는 O)
+    playerOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        if (!gameActive) return;
+        
+        const choice = this.dataset.choice;
+        
+        // 이미 선택된 기호인 경우 무시
+        if (playerSymbol === choice) return;
+        
+        // 이미 진행 중인 게임이 있으면 확인
+        if (board.some(cell => cell !== '')) {
+          if (!confirm('게임을 재시작하시겠습니까?')) {
+            return;
+          }
+        }
+        
+        // 선택 변경
+        playerOptions.forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+        
+        playerSymbol = choice;
+        aiSymbol = choice === 'x' ? 'o' : 'x';
+        
+        // 게임 재시작
+        resetBoard();
+        
+        // AI가 먼저 시작하는 경우
+        if (playerSymbol === 'o') {
+          currentPlayer = 'x';
+          gameStatus.textContent = "컴퓨터의 차례입니다...";
+          gameStatus.className = "game-status ai-turn";
+          
+          // AI 차례 진행
+          setTimeout(aiMove, 1000);
+        } else {
+          currentPlayer = 'x';
+          gameStatus.textContent = "당신의 차례입니다.";
+          gameStatus.className = "game-status your-turn";
+        }
+      });
+    });
+    
+    // 셀 클릭 이벤트
+    cells.forEach(cell => {
+      cell.addEventListener('click', function() {
+        if (!gameActive) return;
+        
+        const index = parseInt(this.dataset.index);
+        
+        // 이미 선택된 칸이거나 게임이 끝났으면 무시
+        if (board[index] !== '' || currentPlayer !== playerSymbol) return;
+        
+        // 플레이어 이동
+        makeMove(index, playerSymbol);
+        
+        // 승리 확인
+        if (checkWin(playerSymbol)) {
+          endGame('player');
+          return;
+        }
+        
+        // 무승부 확인
+        if (checkDraw()) {
+          endGame('draw');
+          return;
+        }
+        
+        // AI 차례로 변경
+        currentPlayer = aiSymbol;
+        gameStatus.textContent = "컴퓨터의 차례입니다...";
+        gameStatus.className = "game-status ai-turn";
+        
+        // AI 차례 진행
+        setTimeout(aiMove, 1000);
+      });
+    });
+    
+    // 게임 시작
+    function startGame() {
+      betContainer.style.display = 'none';
+      gameContainer.style.display = 'block';
+      
+      resetBoard();
+      gameActive = true;
+      
+      // 플레이어가 X인 경우 먼저 시작
+      if (playerSymbol === 'x') {
+        currentPlayer = 'x';
+        gameStatus.textContent = "당신의 차례입니다.";
+        gameStatus.className = "game-status your-turn";
+      } else {
+        currentPlayer = 'x';
+        gameStatus.textContent = "컴퓨터의 차례입니다...";
+        gameStatus.className = "game-status ai-turn";
+        
+        // AI 차례 진행
+        setTimeout(aiMove, 1000);
+      }
+    }
+    
+    // 보드 초기화
+    function resetBoard() {
+      board = Array(9).fill('');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('x', 'o', 'winning');
+      });
+      gameActive = true;
+    }
+    
+    // 이동 실행
+    function makeMove(index, symbol) {
+      board[index] = symbol;
+      cells[index].textContent = symbol.toUpperCase();
+      cells[index].classList.add(symbol);
+    }
+    
+    // 승리 확인
+    function checkWin(symbol) {
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // 가로
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // 세로
+        [0, 4, 8], [2, 4, 6]            // 대각선
+      ];
+      
+      for (const pattern of winPatterns) {
+        if (
+          board[pattern[0]] === symbol &&
+          board[pattern[1]] === symbol &&
+          board[pattern[2]] === symbol
+        ) {
+          // 승리 표시
+          pattern.forEach(index => {
+            cells[index].classList.add('winning');
+          });
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    // 무승부 확인
+    function checkDraw() {
+      return board.every(cell => cell !== '');
+    }
+    
+    // AI 이동
+    function aiMove() {
+      if (!gameActive) return;
+      
+      let index;
+      
+      // 난이도에 따른 AI 이동 결정
+      switch (difficulty) {
+        case 'easy':
+          index = getRandomMove();
+          break;
+        case 'medium':
+          // 50% 확률로 최적의 이동 또는 랜덤 이동
+          index = Math.random() < 0.5 ? getBestMove() : getRandomMove();
+          break;
+        case 'hard':
+          index = getBestMove();
+          break;
+        default:
+          index = getRandomMove();
+      }
+      
+      // AI 이동 실행
+      makeMove(index, aiSymbol);
+      
+      // 승리 확인
+      if (checkWin(aiSymbol)) {
+        endGame('ai');
+        return;
+      }
+      
+      // 무승부 확인
+      if (checkDraw()) {
+        endGame('draw');
+        return;
+      }
+      
+      // 플레이어 차례로 변경
+      currentPlayer = playerSymbol;
+      gameStatus.textContent = "당신의 차례입니다.";
+      gameStatus.className = "game-status your-turn";
+    }
+    
+    // 랜덤 이동 (쉬운 난이도)
+    function getRandomMove() {
+      const emptyCells = [];
+      
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === '') {
+          emptyCells.push(i);
+        }
+      }
+      
+      return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    }
+    
+    // 최적의 이동 (어려운 난이도)
+    function getBestMove() {
+      // 승리 가능한 이동 검사
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === '') {
+          board[i] = aiSymbol;
+          if (checkWin(aiSymbol)) {
+            board[i] = '';
+            return i;
+          }
+          board[i] = '';
+        }
+      }
+      
+      // 상대방 승리 방지 이동 검사
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === '') {
+          board[i] = playerSymbol;
+          if (checkWin(playerSymbol)) {
+            board[i] = '';
+            return i;
+          }
+          board[i] = '';
+        }
+      }
+      
+      // 중앙 선택
+      if (board[4] === '') {
+        return 4;
+      }
+      
+      // 코너 선택
+      const corners = [0, 2, 6, 8];
+      const emptyCorners = corners.filter(i => board[i] === '');
+      if (emptyCorners.length > 0) {
+        return emptyCorners[Math.floor(Math.random() * emptyCorners.length)];
+      }
+      
+      // 가장자리 선택
+      const edges = [1, 3, 5, 7];
+      const emptyEdges = edges.filter(i => board[i] === '');
+      if (emptyEdges.length > 0) {
+        return emptyEdges[Math.floor(Math.random() * emptyEdges.length)];
+      }
+      
+      // 남은 빈 칸 선택
+      return getRandomMove();
+    }
+    
+    // 게임 종료
+    function endGame(result) {
+      gameActive = false;
+      
+      let gameResult = '';
+      let winAmount = 0;
+      
+      if (result === 'player') {
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        gameStatus.textContent = "축하합니다! 당신이 이겼습니다!";
+        gameStatus.className = "game-status win";
+        gameResult = 'win';
+        winAmount = betAmount * 2;
+      } else if (result === 'ai') {
+        aiScore++;
+        aiScoreEl.textContent = aiScore;
+        gameStatus.textContent = "아쉽네요! 컴퓨터가 이겼습니다.";
+        gameStatus.className = "game-status lose";
+        gameResult = 'lose';
+        winAmount = 0;
+      } else if (result === 'draw') {
+        draws++;
+        drawsEl.textContent = draws;
+        gameStatus.textContent = "무승부입니다!";
+        gameStatus.className = "game-status draw";
+        gameResult = 'draw';
+        winAmount = betAmount;
+      }
+      
+      // 서버에 게임 결과 전송
+      fetch('{{ url_for("games.place_bet") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `game_id=tictactoe&bet_amount=${betAmount}&game_data=${gameResult}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 잔액 업데이트
+          userBalance.textContent = `${data.new_balance}원`;
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('게임 결과를 처리하는 중 오류가 발생했습니다.');
+      });
+    }
+    
+    // 새 게임 버튼
+    newGameBtn.addEventListener('click', function() {
+      resetBoard();
+      
+      // 플레이어가 X인 경우 먼저 시작
+      if (playerSymbol === 'x') {
+        currentPlayer = 'x';
+        gameStatus.textContent = "당신의 차례입니다.";
+        gameStatus.className = "game-status your-turn";
+      } else {
+        currentPlayer = 'x';
+        gameStatus.textContent = "컴퓨터의 차례입니다...";
+        gameStatus.className = "game-status ai-turn";
+        
+        // AI 차례 진행
+        setTimeout(aiMove, 1000);
+      }
+    });
+    
+    // 게임 종료 버튼
+    endGameBtn.addEventListener('click', function() {
+      gameContainer.style.display = 'none';
+      betContainer.style.display = 'block';
+      
+      // 점수 초기화
+      playerScore = 0;
+      aiScore = 0;
+      draws = 0;
+      playerScoreEl.textContent = playerScore;
+      aiScoreEl.textContent = aiScore;
+      drawsEl.textContent = draws;
+    });
+  });
+</script>
+{% endblock %}

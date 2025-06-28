@@ -1,0 +1,320 @@
+{% extends 'layout.html' %}
+
+{% block title %}숫자 베팅 게임 - {{ system_config.system_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">숫자 베팅 게임</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- 게임 설명 -->
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">게임 규칙</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>1부터 10까지의 숫자 중 하나를 선택하고 베팅하세요!</p>
+                            <ul>
+                                <li>1에서 10 사이의 숫자를 선택합니다.</li>
+                                <li>컴퓨터도 1에서 10 사이의 숫자를 무작위로 선택합니다.</li>
+                                <li>선택한 숫자가 컴퓨터의 숫자와 일치하면 승리!</li>
+                                <li>승리 시 베팅 금액의 {{ game_config.special_win_multiplier }}배를 획득합니다.</li>
+                                <li>최소 베팅 금액: {{ game_config.min_bet }}{{ currency_name }}</li>
+                                <li>최대 베팅 금액: {{ game_config.max_bet }}{{ currency_name }}</li>
+                            </ul>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 현재 시스템 승률 보너스: {{ (game_win_boost-1)*100 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 베팅 정보 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">베팅하기</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="betForm">
+                                <div class="form-group mb-3">
+                                    <label for="betAmount">베팅 금액 (현재 잔액: <span id="userBalance">{{ g.user.balance }}</span>{{ currency_name }})</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="betAmount" name="betAmount" min="{{ game_config.min_bet }}" max="{{ game_config.max_bet }}" value="{{ game_config.min_bet }}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">{{ currency_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="userNumber">선택할 숫자 (1-10)</label>
+                                    <input type="number" class="form-control" id="userNumber" name="userNumber" min="1" max="10" value="5">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary" id="betButton">베팅하기</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- 결과 표시 -->
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">게임 결과</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultArea" class="text-center p-3">
+                                <p class="lead">숫자를 선택하고 베팅하세요!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 게임 화면 -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">숫자 베팅 게임</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4 text-center">
+                                <h3>당신의 선택</h3>
+                                <div id="userNumberDisplay" class="display-1 my-3">?</div>
+                            </div>
+                            
+                            <div class="text-center my-4">
+                                <div id="vsDisplay" class="display-4" style="display: none;">VS</div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <h3>컴퓨터의 선택</h3>
+                                <div id="computerNumberDisplay" class="display-1 my-3">?</div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <div id="resultDisplay" class="alert" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- 숫자 선택 버튼 그리드 -->
+                            <div class="row mt-4 number-grid">
+                                {% for i in range(1, 11) %}
+                                <div class="col-md-2 col-4 mb-3">
+                                    <button class="btn btn-outline-primary btn-lg number-btn d-block w-100" data-number="{{ i }}">{{ i }}</button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 베팅 버튼 이벤트
+        document.getElementById('betButton').addEventListener('click', placeBet);
+        
+        // 숫자 버튼 이벤트
+        document.querySelectorAll('.number-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const number = this.getAttribute('data-number');
+                document.getElementById('userNumber').value = number;
+                
+                // 선택한 버튼 강조
+                document.querySelectorAll('.number-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+                this.classList.add('active');
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+                
+                // 선택한 숫자 표시
+                document.getElementById('userNumberDisplay').textContent = number;
+            });
+        });
+    });
+    
+    function placeBet() {
+        const betAmount = parseInt(document.getElementById('betAmount').value);
+        const userNumber = parseInt(document.getElementById('userNumber').value);
+        
+        // 입력값 검증
+        if (isNaN(betAmount) || betAmount < {{ game_config.min_bet }} || betAmount > {{ game_config.max_bet }}) {
+            showToast('베팅 금액은 {{ game_config.min_bet }} ~ {{ game_config.max_bet }} 사이여야 합니다.', 'error');
+            return;
+        }
+        
+        if (isNaN(userNumber) || userNumber < 1 || userNumber > 10) {
+            showToast('숫자는 1에서 10 사이여야 합니다.', 'error');
+            return;
+        }
+        
+        if (betAmount > parseInt(document.getElementById('userBalance').textContent)) {
+            showToast('잔액이 부족합니다.', 'error');
+            return;
+        }
+        
+        // 베팅 버튼 비활성화
+        document.getElementById('betButton').disabled = true;
+        document.getElementById('betButton').textContent = '처리 중...';
+        
+        // 사용자 선택 표시
+        document.getElementById('userNumberDisplay').textContent = userNumber;
+        
+        // VS 표시
+        document.getElementById('vsDisplay').style.display = 'block';
+        
+        // 애니메이션 효과로 컴퓨터 숫자 결정
+        animateComputerNumber();
+    }
+    
+    function animateComputerNumber() {
+        let counter = 0;
+        const interval = setInterval(() => {
+            const randomNumber = Math.floor(Math.random() * 10) + 1;
+            document.getElementById('computerNumberDisplay').textContent = randomNumber;
+            counter++;
+            
+            if (counter > 15) {
+                clearInterval(interval);
+                determineWinner();
+            }
+        }, 100);
+    }
+    
+    function determineWinner() {
+        const userNumber = parseInt(document.getElementById('userNumber').value);
+        const computerNumber = Math.floor(Math.random() * 10) + 1;
+        
+        document.getElementById('computerNumberDisplay').textContent = computerNumber;
+        
+        // 결과 확인 및 UI 업데이트
+        const resultDisplay = document.getElementById('resultDisplay');
+        
+        if (userNumber === computerNumber) {
+            // 승리
+            resultDisplay.className = 'alert alert-success';
+            resultDisplay.textContent = '축하합니다! 일치합니다!';
+        } else {
+            // 패배
+            resultDisplay.className = 'alert alert-danger';
+            resultDisplay.textContent = '아쉽습니다! 다음 기회에...';
+        }
+        
+        resultDisplay.style.display = 'block';
+        
+        // 서버에 결과 전송
+        submitGameResult(userNumber);
+    }
+    
+    function submitGameResult(userNumber) {
+        const betAmount = parseInt(document.getElementById('betAmount').value);
+        
+        fetch('/games/bet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'game_id': 'betting',
+                'bet_amount': betAmount,
+                'game_data': userNumber.toString()
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 결과 표시
+                document.getElementById('resultArea').innerHTML = `
+                    <h4>${data.message}</h4>
+                    <p>새 잔액: ${data.new_balance}{{ currency_name }}</p>
+                `;
+                
+                // 사용자 잔액 업데이트
+                document.getElementById('userBalance').textContent = data.new_balance;
+                
+                // 베팅 버튼 재활성화
+                document.getElementById('betButton').disabled = false;
+                document.getElementById('betButton').textContent = '다시 베팅하기';
+                
+                // 토스트 메시지 표시
+                showToast(data.message, data.result.includes('win') ? 'success' : 'error');
+                
+                // 결과에 따른 컴퓨터 숫자 표시
+                const actualNumber = data.result.split('_')[1];
+                if (actualNumber) {
+                    document.getElementById('computerNumberDisplay').textContent = actualNumber;
+                }
+            } else {
+                showToast(data.message, 'error');
+                
+                // 베팅 버튼 재활성화
+                document.getElementById('betButton').disabled = false;
+                document.getElementById('betButton').textContent = '베팅하기';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('오류가 발생했습니다. 다시 시도해주세요.', 'error');
+            
+            // 베팅 버튼 재활성화
+            document.getElementById('betButton').disabled = false;
+            document.getElementById('betButton').textContent = '베팅하기';
+        });
+    }
+</script>
+
+<style>
+    .number-btn {
+        font-size: 1.5rem;
+        height: 60px;
+        transition: all 0.2s;
+    }
+    
+    .number-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .number-btn.active {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    #userNumberDisplay, #computerNumberDisplay {
+        font-size: 5rem;
+        font-weight: bold;
+        color: #007bff;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s;
+    }
+    
+    #computerNumberDisplay {
+        color: #dc3545;
+    }
+    
+    #vsDisplay {
+        font-weight: bold;
+        color: #6c757d;
+    }
+    
+    /* 승리 효과 */
+    .win-animation {
+        animation: winner 1s infinite;
+    }
+    
+    @keyframes winner {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+</style>
+{% endblock %}

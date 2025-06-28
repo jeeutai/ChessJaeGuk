@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}관리자 - 레벨 관리{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'admin_sidebar.html' %}
+        </div>
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">레벨 시스템 관리</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="levelTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="true">레벨 목록</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="false">레벨 추가</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="levelTabContent">
+                        <!-- 레벨 목록 탭 -->
+                        <div class="tab-pane fade show active" id="list" role="tabpanel" aria-labelledby="list-tab">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">레벨</th>
+                                            <th scope="col">칭호</th>
+                                            <th scope="col">필요 포인트</th>
+                                            <th scope="col">보너스 보상</th>
+                                            <th scope="col">설명</th>
+                                            <th scope="col">상태</th>
+                                            <th scope="col">관리</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for level in levels %}
+                                        <tr>
+                                            <td>{{ level.level }}</td>
+                                            <td>{{ level.title }}</td>
+                                            <td>{{ level.required_points }}</td>
+                                            <td>{{ level.bonus_reward }}</td>
+                                            <td>{{ level.description|truncate(30) }}</td>
+                                            <td>
+                                                {% if level.enabled == 'True' %}
+                                                    <span class="badge bg-success">활성화</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">비활성화</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-primary edit-btn" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#editLevelModal"
+                                                        data-level="{{ level.level }}"
+                                                        data-title="{{ level.title }}"
+                                                        data-required-points="{{ level.required_points }}"
+                                                        data-bonus-reward="{{ level.bonus_reward }}"
+                                                        data-description="{{ level.description }}"
+                                                        data-icon-url="{{ level.icon_url }}"
+                                                        data-enabled="{{ level.enabled }}">
+                                                    수정
+                                                </button>
+                                                {% if level.level != '1' %}
+                                                <button class="btn btn-sm btn-danger delete-btn" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteLevelModal"
+                                                        data-level="{{ level.level }}">
+                                                    삭제
+                                                </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 레벨 추가 탭 -->
+                        <div class="tab-pane fade" id="add" role="tabpanel" aria-labelledby="add-tab">
+                            <form method="post">
+                                <input type="hidden" name="add_level" value="1">
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="level" class="form-label">레벨</label>
+                                        <input type="number" class="form-control" id="level" name="level" min="1" required>
+                                        <div class="form-text">숫자 형식의 레벨 단계</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="title" class="form-label">칭호</label>
+                                        <input type="text" class="form-control" id="title" name="title" required>
+                                        <div class="form-text">레벨 달성 시 얻는 칭호</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="required_points" class="form-label">필요 포인트</label>
+                                        <input type="number" class="form-control" id="required_points" name="required_points" min="0" required>
+                                        <div class="form-text">이 레벨에 도달하기 위해 필요한 포인트</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="bonus_reward" class="form-label">보너스 보상</label>
+                                        <input type="number" class="form-control" id="bonus_reward" name="bonus_reward" value="0" min="0">
+                                        <div class="form-text">레벨 달성 시 지급되는 보상 (체스머니)</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">설명</label>
+                                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="icon_url" class="form-label">아이콘 URL</label>
+                                        <input type="text" class="form-control" id="icon_url" name="icon_url">
+                                        <div class="form-text">레벨 아이콘 이미지 경로</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3 d-flex align-items-center">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="enabled" name="enabled" value="True" checked>
+                                            <label class="form-check-label" for="enabled">활성화</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">레벨 추가</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 레벨 수정 모달 -->
+<div class="modal fade" id="editLevelModal" tabindex="-1" aria-labelledby="editLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLevelModalLabel">레벨 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLevelForm" method="post">
+                    <input type="hidden" name="edit_level" value="1">
+                    <input type="hidden" id="edit_level_num" name="level_num">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_title" class="form-label">칭호</label>
+                            <input type="text" class="form-control" id="edit_title" name="title" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_required_points" class="form-label">필요 포인트</label>
+                            <input type="number" class="form-control" id="edit_required_points" name="required_points" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_bonus_reward" class="form-label">보너스 보상</label>
+                            <input type="number" class="form-control" id="edit_bonus_reward" name="bonus_reward" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_icon_url" class="form-label">아이콘 URL</label>
+                            <input type="text" class="form-control" id="edit_icon_url" name="icon_url">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">설명</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="edit_enabled" name="enabled" value="True">
+                        <label class="form-check-label" for="edit_enabled">활성화</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="saveEditBtn">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 레벨 삭제 확인 모달 -->
+<div class="modal fade" id="deleteLevelModal" tabindex="-1" aria-labelledby="deleteLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteLevelModalLabel">레벨 삭제 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>해당 레벨을 삭제하시겠습니까? 이 작업은 레벨 시스템에 영향을 미칠 수 있습니다.</p>
+                <p class="text-danger fw-bold">이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form id="deleteLevelForm" method="post">
+                    <input type="hidden" name="delete_level" value="1">
+                    <input type="hidden" id="delete_level_num" name="level_num">
+                    <button type="submit" class="btn btn-danger">삭제</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 레벨 수정 모달
+        const editButtons = document.querySelectorAll('.edit-btn');
+        
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const level = this.dataset.level;
+                document.getElementById('edit_level_num').value = level;
+                document.getElementById('edit_title').value = this.dataset.title;
+                document.getElementById('edit_required_points').value = this.dataset.requiredPoints;
+                document.getElementById('edit_bonus_reward').value = this.dataset.bonusReward;
+                document.getElementById('edit_description').value = this.dataset.description;
+                document.getElementById('edit_icon_url').value = this.dataset.iconUrl;
+                document.getElementById('edit_enabled').checked = this.dataset.enabled === 'True';
+            });
+        });
+        
+        // 레벨 수정 저장 버튼
+        document.getElementById('saveEditBtn').addEventListener('click', function() {
+            document.getElementById('editLevelForm').submit();
+        });
+        
+        // 레벨 삭제 모달
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const level = this.dataset.level;
+                document.getElementById('delete_level_num').value = level;
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="market-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0"><i class="fas fa-store me-2"></i>체스제국 마트</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="balance-display mb-3 p-3 bg-light rounded">
+                        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold">{{ g.user.balance }} {{ system_config.get('currency_symbol', 'CM') }}</span></h5>
+                    </div>
+                    
+                    <div class="shop-items">
+                        <h3 class="mb-3"><i class="fas fa-shopping-bag me-2"></i>상품 목록</h3>
+                        <div class="row g-3">
+                            {% for item in items %}
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">{{ item.name }}</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-center align-items-center mb-3">
+                                            {% if "행운" in item.name %}
+                                            <i class="fas fa-gem fa-4x text-warning"></i>
+                                            {% elif "보너스" in item.name %}
+                                            <i class="fas fa-money-bill-wave fa-4x text-success"></i>
+                                            {% elif "프리미엄" in item.name %}
+                                            <i class="fas fa-certificate fa-4x text-primary"></i>
+                                            {% elif "강화" in item.name %}
+                                            <i class="fas fa-fist-raised fa-4x text-danger"></i>
+                                            {% elif "능력" in item.name %}
+                                            <i class="fas fa-magic fa-4x text-info"></i>
+                                            {% else %}
+                                            <i class="fas fa-gift fa-4x text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+                                        <p class="card-text"><strong>효과:</strong> {{ item.effect }}</p>
+                                        <p class="card-text"><strong>사용 횟수:</strong> {{ item.max_uses }}회</p>
+                                        <p class="card-text"><strong>지속 시간:</strong> {{ item.duration }}회</p>
+                                        <p class="card-text text-primary fw-bold"><strong>가격:</strong> {{ item.price }}{{ system_config.get('currency_symbol', 'CM') }}</p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <form action="{{ url_for('market.buy_item', item_id=item.id) }}" method="post">
+                                            <div class="d-flex">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">수량</span>
+                                                    <input type="number" class="form-control" name="quantity" value="1" min="1" max="10" placeholder="Enter quantity">
+                                                </div>
+                                                <button type="submit" class="btn btn-primary ms-2" {% if g.user.balance|int < item.price|int %}disabled{% endif %}>
+                                                    <i class="fas fa-shopping-cart me-1"></i> 구매
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="user-inventory">
+                        <h3 class="mb-3"><i class="fas fa-box-open me-2"></i>내 보관함</h3>
+                        {% if user_purchases %}
+                        <div class="list-group">
+                            {% for purchase in user_purchases %}
+                            <div class="list-group-item">
+                                {% for item in items %}
+                                    {% if item.id == purchase.item_id %}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1">{{ item.name }}</h5>
+                                                <p class="mb-1 small">{{ item.effect }}</p>
+                                                <small class="text-muted">구매일: {{ purchase.timestamp.split()[0] }}</small>
+                                            </div>
+                                            <div>
+                                                <form action="{{ url_for('market.use_item', log_id=purchase.id) }}" method="post">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-magic me-1"></i> 사용
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>보관함이 비어있습니다. 아이템을 구매해보세요!
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card mt-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>아이템 사용 안내</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="mb-0">
+                                    <li>게임 부스트 아이템은 다음 게임에 자동 적용됩니다.</li>
+                                    <li>송금 보너스는 다음 거래에 자동 적용됩니다.</li>
+                                    <li>프로필 아이템은 사용 즉시 프로필에 반영됩니다.</li>
+                                    <li>효과는 지속 시간이 끝나면 자동으로 소멸합니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-star me-2"></i>추천 아이템</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recommended-item" class="text-center">
+                                    <!-- 추천 아이템이 동적으로 표시됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/market.js') }}"></script>
+{% endblock %}

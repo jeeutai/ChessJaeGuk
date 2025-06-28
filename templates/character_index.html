@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}캐릭터 - {{ system_config.app_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/character.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="character-container">
+    <h1>캐릭터 정보</h1>
+    
+    <div class="character-card">
+        <div class="character-header">
+            <div class="character-avatar">
+                <i class="{{ class_info.get('icon', 'fas fa-user') }} fa-3x"></i>
+            </div>
+            <div class="character-info">
+                <h2>{{ character.get('name', '캐릭터') }}</h2>
+                <p>Lv. {{ character.get('level', '1') }} {{ class_info.get('name', '전사') }}</p>
+            </div>
+        </div>
+        
+        <div class="character-stats">
+            <div class="stat-row">
+                <div class="stat">
+                    <span class="stat-label">HP</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill hp" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value">{{ character.get('hp', '100') }}/{{ character.get('hp', '100') }}</span>
+                </div>
+            </div>
+            
+            <div class="stat-row">
+                <div class="stat">
+                    <span class="stat-label">MP</span>
+                    <div class="stat-bar">
+                        <div class="stat-fill mp" style="width: 100%"></div>
+                    </div>
+                    <span class="stat-value">{{ character.get('mp', '50') }}/{{ character.get('mp', '50') }}</span>
+                </div>
+            </div>
+            
+            <div class="stat-row">
+                <div class="stat">
+                    <span class="stat-label">경험치</span>
+                    <div class="stat-bar">
+                        {% set exp = character.get('exp', '0')|int %}
+                        {% set level = character.get('level', '1')|int %}
+                        {% set exp_required = level * 100 %}
+                        {% set exp_percent = (exp / exp_required * 100)|int if exp_required > 0 else 0 %}
+                        <div class="stat-fill exp" style="width: {{ exp_percent }}%"></div>
+                    </div>
+                    <span class="stat-value">{{ character.get('exp', '0') }}/{{ level * 100 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="character-attributes">
+            <div class="attribute">
+                <span class="attribute-label">힘</span>
+                <span class="attribute-value">{{ character.get('strength', '10') }}</span>
+                <button class="attribute-up-btn" data-stat="strength">+</button>
+            </div>
+            
+            <div class="attribute">
+                <span class="attribute-label">민첩</span>
+                <span class="attribute-value">{{ character.get('agility', '10') }}</span>
+                <button class="attribute-up-btn" data-stat="agility">+</button>
+            </div>
+            
+            <div class="attribute">
+                <span class="attribute-label">지능</span>
+                <span class="attribute-value">{{ character.get('intelligence', '10') }}</span>
+                <button class="attribute-up-btn" data-stat="intelligence">+</button>
+            </div>
+        </div>
+        
+        <div class="character-details">
+            <p><i class="fas fa-coins"></i> 골드: {{ character.get('gold', '0') }}</p>
+            <p><i class="fas fa-trophy"></i> 승리: {{ character.get('wins', '0') }}</p>
+            <p><i class="fas fa-skull"></i> 패배: {{ character.get('losses', '0') }}</p>
+            <p><i class="fas fa-star"></i> 스킬 포인트: {{ character.get('skill_points', '0') }}</p>
+        </div>
+        
+        <div class="character-description">
+            <p>{{ class_info.get('description', '캐릭터 설명이 없습니다.') }}</p>
+        </div>
+    </div>
+    
+    <div class="character-actions">
+        <a href="{{ url_for('character.customize') }}" class="btn">캐릭터 커스터마이징</a>
+        <a href="{{ url_for('character.skills') }}" class="btn">스킬 관리</a>
+        <a href="{{ url_for('character.battle') }}" class="btn">배틀</a>
+        <a href="{{ url_for('character.stats') }}" class="btn">통계</a>
+        <a href="{{ url_for('character.class_change') }}" class="btn">직업 변경</a>
+    </div>
+    
+    {% if skills %}
+    <div class="character-skills">
+        <h2>습득한 스킬</h2>
+        <div class="skills-list">
+            {% for skill in skills %}
+            <div class="skill-card">
+                <div class="skill-icon">
+                    <i class="{{ skill.get('icon', 'fas fa-star') }}"></i>
+                </div>
+                <div class="skill-info">
+                    <h3>{{ skill.get('name', '스킬') }}</h3>
+                    <p>{{ skill.get('description', '스킬 설명이 없습니다.') }}</p>
+                    <p class="skill-level">레벨 {{ skill.get('level', '1') }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="character-skills">
+        <h2>습득한 스킬</h2>
+        <p>아직 습득한 스킬이 없습니다. <a href="{{ url_for('character.skills') }}">스킬 관리</a>에서 스킬을 습득하세요.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 기존 캐릭터 정보 표시 후 -->
+<div class="character-actions">
+    <a href="{{ url_for('character.stats') }}" class="btn">스탯 관리</a>
+    <a href="{{ url_for('character.skills') }}" class="btn">스킬 관리</a>
+    <a href="{{ url_for('character.battle') }}" class="btn">배틀 시작</a>
+    <a href="{{ url_for('character.history') }}" class="btn">배틀 기록</a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 스탯 증가 버튼 이벤트 처리
+    const statButtons = document.querySelectorAll('.attribute-up-btn');
+    
+    statButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const stat = this.getAttribute('data-stat');
+            
+            // 스킬 포인트 확인
+            const skillPoints = parseInt(document.querySelector('.character-details p:nth-child(4)').textContent.match(/\d+/)[0]);
+            
+            if (skillPoints <= 0) {
+                alert('스킬 포인트가 부족합니다.');
+                return;
+            }
+            
+            // AJAX 요청으로 스탯 증가
+            fetch('/character/increase_stat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `stat=${stat}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 성공 시 페이지 새로고침
+                    location.reload();
+                } else {
+                    alert(data.message || '오류가 발생했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('오류가 발생했습니다.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

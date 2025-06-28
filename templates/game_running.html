@@ -1,0 +1,558 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+  .game-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+    border-radius: 8px;
+    border: 2px solid #0D47A1;
+  }
+  
+  .player {
+    position: absolute;
+    bottom: 80px;
+    left: 50px;
+    width: 50px;
+    height: 50px;
+    background-color: #F44336;
+    border-radius: 50%;
+    z-index: 10;
+  }
+  
+  .ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+    background-color: #4CAF50;
+  }
+  
+  .obstacle {
+    position: absolute;
+    bottom: 80px;
+    width: 30px;
+    height: 60px;
+    background-color: #795548;
+    border-radius: 5px;
+  }
+  
+  .cloud {
+    position: absolute;
+    width: 100px;
+    height: 40px;
+    background-color: #FFF;
+    border-radius: 20px;
+    opacity: 0.8;
+  }
+  
+  .score-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 5px 15px;
+    border-radius: 20px;
+    z-index: 20;
+  }
+  
+  .game-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .control-btn {
+    width: 80px;
+    height: 80px;
+    margin: 0 10px;
+    border-radius: 50%;
+    border: none;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .jump-btn {
+    background-color: #2196F3;
+    color: white;
+  }
+  
+  .duck-btn {
+    background-color: #FFC107;
+    color: white;
+  }
+  
+  .game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    color: white;
+  }
+  
+  .game-message {
+    font-size: 32px;
+    margin-bottom: 20px;
+  }
+  
+  .bet-container {
+    margin-bottom: 30px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+      <h2 class="mb-0"><i class="fas fa-running me-2"></i>러닝 게임</h2>
+    </div>
+    <div class="card-body">
+      <div class="balance-display mb-3 p-3 bg-light rounded">
+        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold" id="user-balance">{{ g.user.balance }}원</span></h5>
+      </div>
+      
+      <!-- 게임 베팅 -->
+      <div class="bet-container mb-4" id="bet-container">
+        <div class="card">
+          <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0"><i class="fas fa-coins me-2"></i>배팅하기</h4>
+          </div>
+          <div class="card-body">
+            <form id="bet-form">
+              <div class="mb-3">
+                <label for="bet-amount" class="form-label">배팅 금액</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="bet-amount" min="100" max="{{ g.user.balance }}" value="100" required>
+                  <span class="input-group-text">원</span>
+                </div>
+                <div class="form-text">최소 100원부터 배팅 가능합니다.</div>
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-success btn-lg">게임 시작</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 게임 영역 -->
+      <div class="game-container" id="game-container" style="display: none;">
+        <div class="score-display">점수: <span id="score">0</span></div>
+        <div class="player" id="player"></div>
+        <div class="ground"></div>
+        
+        <!-- 게임 시작 오버레이 -->
+        <div class="game-overlay" id="start-overlay">
+          <div class="game-message">준비하세요!</div>
+          <div class="countdown">3</div>
+        </div>
+        
+        <!-- 게임 종료 오버레이 -->
+        <div class="game-overlay" id="end-overlay" style="display: none;">
+          <div class="game-message" id="end-message">게임 종료!</div>
+          <div class="result mb-3" id="result-message"></div>
+          <button class="btn btn-primary btn-lg" id="play-again-btn">다시 하기</button>
+        </div>
+      </div>
+      
+      <!-- 게임 컨트롤 -->
+      <div class="game-controls" id="game-controls" style="display: none;">
+        <button class="control-btn jump-btn" id="jump-btn">
+          <i class="fas fa-arrow-up"></i>
+        </button>
+        <button class="control-btn duck-btn" id="duck-btn">
+          <i class="fas fa-arrow-down"></i>
+        </button>
+      </div>
+      
+      <!-- 게임 설명 -->
+      <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+          <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>게임 방법</h4>
+        </div>
+        <div class="card-body">
+          <ol>
+            <li>배팅 금액을 입력하고 "게임 시작" 버튼을 클릭합니다.</li>
+            <li>장애물을 피해 최대한 멀리 달리세요.</li>
+            <li>위쪽 버튼으로 점프하고, 아래쪽 버튼으로 숙이세요.</li>
+            <li>50점 이상: 배팅금액의 2배</li>
+            <li>30점 이상: 배팅금액의 1.5배</li>
+            <li>20점 이상: 배팅금액 그대로</li>
+            <li>20점 미만: 배팅금액 잃음</li>
+          </ol>
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>모바일에서는 화면을 터치하여 점프할 수 있습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const betContainer = document.getElementById('bet-container');
+    const gameContainer = document.getElementById('game-container');
+    const gameControls = document.getElementById('game-controls');
+    const betForm = document.getElementById('bet-form');
+    const player = document.getElementById('player');
+    const scoreDisplay = document.getElementById('score');
+    const startOverlay = document.getElementById('start-overlay');
+    const endOverlay = document.getElementById('end-overlay');
+    const endMessage = document.getElementById('end-message');
+    const resultMessage = document.getElementById('result-message');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const jumpBtn = document.getElementById('jump-btn');
+    const duckBtn = document.getElementById('duck-btn');
+    const userBalance = document.getElementById('user-balance');
+    const countdown = document.querySelector('.countdown');
+    
+    let gameRunning = false;
+    let score = 0;
+    let obstacles = [];
+    let clouds = [];
+    let playerJumping = false;
+    let playerDucking = false;
+    let jumpHeight = 150;
+    let gravity = 5;
+    let playerY = 0;
+    let obstacleSpeed = 5;
+    let obstacleInterval;
+    let cloudInterval;
+    let scoreInterval;
+    let betAmount = 0;
+    
+    // 게임 초기화
+    function initGame() {
+      score = 0;
+      scoreDisplay.textContent = '0';
+      clearObstacles();
+      gameRunning = false;
+      playerJumping = false;
+      playerDucking = false;
+      player.style.bottom = '80px';
+      player.style.height = '50px';
+      playerY = 0;
+      
+      betContainer.style.display = 'none';
+      gameContainer.style.display = 'block';
+      gameControls.style.display = 'flex';
+      startOverlay.style.display = 'flex';
+      endOverlay.style.display = 'none';
+      
+      // 카운트다운 시작
+      let count = 3;
+      countdown.textContent = count;
+      
+      const countdownInterval = setInterval(() => {
+        count--;
+        countdown.textContent = count;
+        
+        if (count <= 0) {
+          clearInterval(countdownInterval);
+          startGame();
+        }
+      }, 1000);
+    }
+    
+    // 게임 시작
+    function startGame() {
+      gameRunning = true;
+      startOverlay.style.display = 'none';
+      
+      // 장애물 생성 시작
+      obstacleInterval = setInterval(createObstacle, 2000);
+      
+      // 구름 생성 시작
+      cloudInterval = setInterval(createCloud, 3000);
+      
+      // 점수 증가 시작
+      scoreInterval = setInterval(() => {
+        score++;
+        scoreDisplay.textContent = score;
+      }, 100);
+      
+      // 게임 업데이트 루프
+      gameLoop();
+    }
+    
+    // 게임 업데이트 루프
+    function gameLoop() {
+      if (!gameRunning) return;
+      
+      // 플레이어 점프 처리
+      if (playerJumping) {
+        playerY -= gravity;
+        player.style.bottom = `${parseInt(player.style.bottom) + playerY}px`;
+        
+        if (parseInt(player.style.bottom) >= 80 + jumpHeight) {
+          playerJumping = false;
+          playerY = 0;
+        }
+      } else if (parseInt(player.style.bottom) > 80) {
+        // 중력 적용
+        playerY += gravity;
+        player.style.bottom = `${parseInt(player.style.bottom) - playerY}px`;
+        
+        if (parseInt(player.style.bottom) < 80) {
+          player.style.bottom = '80px';
+          playerY = 0;
+        }
+      }
+      
+      // 장애물 이동
+      moveObstacles();
+      
+      // 구름 이동
+      moveClouds();
+      
+      // 충돌 감지
+      checkCollisions();
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // 플레이어 점프
+    function jump() {
+      if (parseInt(player.style.bottom) <= 80 && !playerDucking) {
+        playerJumping = true;
+        playerY = 20;
+      }
+    }
+    
+    // 플레이어 숙이기
+    function duck() {
+      if (!playerJumping) {
+        playerDucking = true;
+        player.style.height = '25px';
+        setTimeout(() => {
+          playerDucking = false;
+          player.style.height = '50px';
+        }, 500);
+      }
+    }
+    
+    // 장애물 생성
+    function createObstacle() {
+      const obstacle = document.createElement('div');
+      obstacle.className = 'obstacle';
+      obstacle.style.left = '100%';
+      
+      // 랜덤 높이의 장애물
+      const height = Math.random() > 0.5 ? 60 : 30;
+      obstacle.style.height = `${height}px`;
+      
+      gameContainer.appendChild(obstacle);
+      obstacles.push(obstacle);
+    }
+    
+    // 구름 생성
+    function createCloud() {
+      const cloud = document.createElement('div');
+      cloud.className = 'cloud';
+      cloud.style.left = '100%';
+      cloud.style.top = `${Math.random() * 150}px`;
+      
+      gameContainer.appendChild(cloud);
+      clouds.push(cloud);
+    }
+    
+    // 장애물 이동
+    function moveObstacles() {
+      for (let i = 0; i < obstacles.length; i++) {
+        const obstacle = obstacles[i];
+        obstacle.style.left = `${parseInt(obstacle.style.left) - obstacleSpeed}px`;
+        
+        // 화면 밖으로 나간 장애물 제거
+        if (parseInt(obstacle.style.left) < -50) {
+          obstacle.remove();
+          obstacles.splice(i, 1);
+          i--;
+        }
+      }
+    }
+    
+    // 구름 이동
+    function moveClouds() {
+      for (let i = 0; i < clouds.length; i++) {
+        const cloud = clouds[i];
+        cloud.style.left = `${parseInt(cloud.style.left) - (obstacleSpeed / 2)}px`;
+        
+        // 화면 밖으로 나간 구름 제거
+        if (parseInt(cloud.style.left) < -150) {
+          cloud.remove();
+          clouds.splice(i, 1);
+          i--;
+        }
+      }
+    }
+    
+    // 충돌 감지
+    function checkCollisions() {
+      const playerRect = player.getBoundingClientRect();
+      
+      for (const obstacle of obstacles) {
+        const obstacleRect = obstacle.getBoundingClientRect();
+        
+        if (
+          playerRect.right > obstacleRect.left &&
+          playerRect.left < obstacleRect.right &&
+          playerRect.bottom > obstacleRect.top &&
+          playerRect.top < obstacleRect.bottom
+        ) {
+          gameOver();
+          return;
+        }
+      }
+    }
+    
+    // 장애물 모두 제거
+    function clearObstacles() {
+      for (const obstacle of obstacles) {
+        obstacle.remove();
+      }
+      obstacles = [];
+      
+      for (const cloud of clouds) {
+        cloud.remove();
+      }
+      clouds = [];
+    }
+    
+    // 게임 종료
+    function gameOver() {
+      gameRunning = false;
+      clearInterval(obstacleInterval);
+      clearInterval(cloudInterval);
+      clearInterval(scoreInterval);
+      
+      endOverlay.style.display = 'flex';
+      
+      let result = '';
+      let winAmount = 0;
+      
+      // 점수에 따른 결과 계산
+      if (score >= 50) {
+        winAmount = betAmount * 2;
+        result = 'big_win';
+        endMessage.textContent = '대성공!';
+        resultMessage.textContent = `${betAmount}원을 베팅하여 ${winAmount}원을 획득했습니다!`;
+        resultMessage.className = 'result mb-3 text-success';
+      } else if (score >= 30) {
+        winAmount = Math.floor(betAmount * 1.5);
+        result = 'win';
+        endMessage.textContent = '성공!';
+        resultMessage.textContent = `${betAmount}원을 베팅하여 ${winAmount}원을 획득했습니다!`;
+        resultMessage.className = 'result mb-3 text-success';
+      } else if (score >= 20) {
+        winAmount = betAmount;
+        result = 'draw';
+        endMessage.textContent = '무승부!';
+        resultMessage.textContent = `${betAmount}원을 돌려받았습니다.`;
+        resultMessage.className = 'result mb-3 text-info';
+      } else {
+        winAmount = 0;
+        result = 'lose';
+        endMessage.textContent = '실패!';
+        resultMessage.textContent = `${betAmount}원을 잃었습니다.`;
+        resultMessage.className = 'result mb-3 text-danger';
+      }
+      
+      // 서버에 게임 결과 전송
+      fetch('{{ url_for("games.place_bet") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `game_id=running&bet_amount=${betAmount}&game_data=${result}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // 잔액 업데이트
+          userBalance.textContent = `${data.new_balance}원`;
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('게임 결과를 처리하는 중 오류가 발생했습니다.');
+      });
+    }
+    
+    // 게임 다시 시작
+    playAgainBtn.addEventListener('click', function() {
+      gameContainer.style.display = 'none';
+      gameControls.style.display = 'none';
+      betContainer.style.display = 'block';
+    });
+    
+    // 베팅 폼 제출
+    betForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      betAmount = parseInt(document.getElementById('bet-amount').value);
+      
+      if (isNaN(betAmount) || betAmount < 100) {
+        alert('최소 100원 이상 배팅해야 합니다.');
+        return;
+      }
+      
+      if (betAmount > parseInt(userBalance.textContent.replace(/[^0-9]/g, ''))) {
+        alert('잔액이 부족합니다.');
+        return;
+      }
+      
+      initGame();
+    });
+    
+    // 점프 버튼 클릭
+    jumpBtn.addEventListener('click', jump);
+    jumpBtn.addEventListener('touchstart', jump);
+    
+    // 숙이기 버튼 클릭
+    duckBtn.addEventListener('click', duck);
+    duckBtn.addEventListener('touchstart', duck);
+    
+    // 키보드 이벤트
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        jump();
+      } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+        duck();
+      }
+    });
+    
+    // 모바일 화면 터치
+    gameContainer.addEventListener('touchstart', function(e) {
+      const touchY = e.touches[0].clientY;
+      const containerRect = gameContainer.getBoundingClientRect();
+      
+      if (touchY < containerRect.height / 2) {
+        jump();
+      } else {
+        duck();
+      }
+    });
+  });
+</script>
+{% endblock %}

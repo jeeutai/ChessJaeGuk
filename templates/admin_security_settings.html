@@ -1,0 +1,588 @@
+{% extends 'admin.html' %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- 보안 설정 카드 -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">보안 설정 관리</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="securitySettingsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="password-policy-tab" data-bs-toggle="tab" data-bs-target="#password-policy" type="button" role="tab" aria-controls="password-policy" aria-selected="true">비밀번호 정책</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="session-tab" data-bs-toggle="tab" data-bs-target="#session" type="button" role="tab" aria-controls="session" aria-selected="false">세션 관리</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ip-security-tab" data-bs-toggle="tab" data-bs-target="#ip-security" type="button" role="tab" aria-controls="ip-security" aria-selected="false">IP 보안</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="encryption-tab" data-bs-toggle="tab" data-bs-target="#encryption" type="button" role="tab" aria-controls="encryption" aria-selected="false">암호화 설정</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="securitySettingsTabContent">
+                        <!-- 비밀번호 정책 -->
+                        <div class="tab-pane fade show active" id="password-policy" role="tabpanel" aria-labelledby="password-policy-tab">
+                            <form action="{{ url_for('admin.security_settings') }}" method="post">
+                                <input type="hidden" name="update_password_policy" value="1">
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">비밀번호 복잡성</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="min_password_length" class="form-label">최소 비밀번호 길이</label>
+                                                    <input type="number" class="form-control" id="min_password_length" name="min_password_length" min="6" max="32" value="{{ security_settings.get('min_password_length', '8') }}">
+                                                    <div class="form-text">최소 6자, 최대 32자까지 설정 가능합니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="require_uppercase" name="require_uppercase" value="1" {% if security_settings.get('require_uppercase') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="require_uppercase">대문자 포함 필수</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="require_lowercase" name="require_lowercase" value="1" {% if security_settings.get('require_lowercase') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="require_lowercase">소문자 포함 필수</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="require_number" name="require_number" value="1" {% if security_settings.get('require_number') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="require_number">숫자 포함 필수</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="require_special" name="require_special" value="1" {% if security_settings.get('require_special') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="require_special">특수문자 포함 필수</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="check_common_passwords" name="check_common_passwords" value="1" {% if security_settings.get('check_common_passwords') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="check_common_passwords">흔한 비밀번호 사용 금지</label>
+                                                    </div>
+                                                    <div class="form-text">흔히 사용되는 취약한 비밀번호 목록을 검사합니다.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">비밀번호 관리</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="password_expiry_days" class="form-label">비밀번호 만료 기간 (일)</label>
+                                                    <input type="number" class="form-control" id="password_expiry_days" name="password_expiry_days" min="0" max="365" value="{{ security_settings.get('password_expiry_days', '90') }}">
+                                                    <div class="form-text">0을 입력하면 만료되지 않습니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="password_history_count" class="form-label">비밀번호 재사용 제한</label>
+                                                    <input type="number" class="form-control" id="password_history_count" name="password_history_count" min="0" max="10" value="{{ security_settings.get('password_history_count', '3') }}">
+                                                    <div class="form-text">최근 사용한 비밀번호의 재사용을 방지합니다. 0은 제한 없음.</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="force_password_change_first_login" name="force_password_change_first_login" value="1" {% if security_settings.get('force_password_change_first_login') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="force_password_change_first_login">첫 로그인 시 비밀번호 변경 강제</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="notify_password_expiry" name="notify_password_expiry" value="1" {% if security_settings.get('notify_password_expiry') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="notify_password_expiry">비밀번호 만료 알림</label>
+                                                    </div>
+                                                    <div class="form-text">만료 7일 전부터 사용자에게 알림을 표시합니다.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 비밀번호 정책 저장
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 세션 관리 -->
+                        <div class="tab-pane fade" id="session" role="tabpanel" aria-labelledby="session-tab">
+                            <form action="{{ url_for('admin.security_settings') }}" method="post">
+                                <input type="hidden" name="update_session" value="1">
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">세션 설정</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="session_lifetime" class="form-label">세션 수명 (분)</label>
+                                                    <input type="number" class="form-control" id="session_lifetime" name="session_lifetime" min="5" max="1440" value="{{ security_settings.get('session_lifetime', '30') }}">
+                                                    <div class="form-text">비활성 상태로 유지되는 최대 시간입니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="session_secure" name="session_secure" value="1" {% if security_settings.get('session_secure') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="session_secure">보안 쿠키 사용 (HTTPS 전용)</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="session_httponly" name="session_httponly" value="1" {% if security_settings.get('session_httponly') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="session_httponly">HttpOnly 쿠키 사용</label>
+                                                    </div>
+                                                    <div class="form-text">JavaScript에서 쿠키에 접근하는 것을 방지합니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="prevent_concurrent_login" name="prevent_concurrent_login" value="1" {% if security_settings.get('prevent_concurrent_login') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="prevent_concurrent_login">동시 로그인 방지</label>
+                                                    </div>
+                                                    <div class="form-text">한 계정에 대해 여러 기기에서 동시 로그인을 방지합니다.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">세션 관리</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="log_user_activity" name="log_user_activity" value="1" {% if security_settings.get('log_user_activity') == 'True' %}checked{% endif %}>
+                                                <label class="form-check-label" for="log_user_activity">사용자 활동 로깅</label>
+                                            </div>
+                                            <div class="form-text">주요 사용자 활동(로그인, 비밀번호 변경 등)을 로그에 기록합니다.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="track_user_sessions" name="track_user_sessions" value="1" {% if security_settings.get('track_user_sessions') == 'True' %}checked{% endif %}>
+                                                <label class="form-check-label" for="track_user_sessions">모든 세션 추적</label>
+                                            </div>
+                                            <div class="form-text">모든 세션에 대해 기기, 위치, IP 주소 등의 정보를 추적합니다.</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-warning" id="terminateAllSessionsBtn">
+                                                <i class="fas fa-sign-out-alt"></i> 모든 사용자 세션 종료
+                                            </button>
+                                            <div class="form-text">모든 사용자를 강제로 로그아웃시킵니다. 관리자 세션은 유지됩니다.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 세션 설정 저장
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- IP 보안 -->
+                        <div class="tab-pane fade" id="ip-security" role="tabpanel" aria-labelledby="ip-security-tab">
+                            <form action="{{ url_for('admin.security_settings') }}" method="post">
+                                <input type="hidden" name="update_ip_security" value="1">
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">로그인 제한</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="enable_login_attempts_limit" name="enable_login_attempts_limit" value="1" {% if security_settings.get('enable_login_attempts_limit') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="enable_login_attempts_limit">로그인 시도 제한 활성화</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="max_login_attempts" class="form-label">최대 로그인 시도 횟수</label>
+                                                    <input type="number" class="form-control" id="max_login_attempts" name="max_login_attempts" min="3" max="20" value="{{ security_settings.get('max_login_attempts', '5') }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="login_lockout_duration" class="form-label">잠금 시간 (분)</label>
+                                                    <input type="number" class="form-control" id="login_lockout_duration" name="login_lockout_duration" min="5" max="1440" value="{{ security_settings.get('login_lockout_duration', '30') }}">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="log_failed_login_attempts" name="log_failed_login_attempts" value="1" {% if security_settings.get('log_failed_login_attempts') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="log_failed_login_attempts">로그인 실패 로깅</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="notify_admin_on_lockout" name="notify_admin_on_lockout" value="1" {% if security_settings.get('notify_admin_on_lockout') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="notify_admin_on_lockout">계정 잠금 시 관리자 알림</label>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <button type="button" class="btn btn-warning" id="resetLockoutsBtn">
+                                                        <i class="fas fa-unlock"></i> 모든 계정 잠금 해제
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">IP 필터링</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="enable_ip_filtering" name="enable_ip_filtering" value="1" {% if security_settings.get('enable_ip_filtering') == 'True' %}checked{% endif %}>
+                                                <label class="form-check-label" for="enable_ip_filtering">IP 필터링 활성화</label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="allowed_ips" class="form-label">허용 IP 리스트</label>
+                                            <textarea class="form-control" id="allowed_ips" name="allowed_ips" rows="3" placeholder="192.168.1.1&#10;10.0.0.0/24">{{ security_settings.get('allowed_ips', '') }}</textarea>
+                                            <div class="form-text">한 줄에 하나의 IP 주소 또는 CIDR 범위를 입력하세요. 비워두면 모든 IP가 허용됩니다.</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="blocked_ips" class="form-label">차단 IP 리스트</label>
+                                            <textarea class="form-control" id="blocked_ips" name="blocked_ips" rows="3" placeholder="192.168.1.2&#10;172.16.0.0/16">{{ security_settings.get('blocked_ips', '') }}</textarea>
+                                            <div class="form-text">한 줄에 하나의 IP 주소 또는 CIDR 범위를 입력하세요.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> IP 보안 설정 저장
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- 암호화 설정 -->
+                        <div class="tab-pane fade" id="encryption" role="tabpanel" aria-labelledby="encryption-tab">
+                            <form action="{{ url_for('admin.security_settings') }}" method="post">
+                                <input type="hidden" name="update_encryption" value="1">
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">암호화 설정</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> <strong>주의:</strong> 암호화 설정을 변경하면 기존 데이터와의 호환성 문제가 발생할 수 있습니다.
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="hash_algorithm" class="form-label">해시 알고리즘</label>
+                                                    <select class="form-select" id="hash_algorithm" name="hash_algorithm">
+                                                        <option value="pbkdf2_sha256" {% if security_settings.get('hash_algorithm') == 'pbkdf2_sha256' %}selected{% endif %}>PBKDF2 + SHA256 (권장)</option>
+                                                        <option value="bcrypt" {% if security_settings.get('hash_algorithm') == 'bcrypt' %}selected{% endif %}>Bcrypt</option>
+                                                        <option value="argon2" {% if security_settings.get('hash_algorithm') == 'argon2' %}selected{% endif %}>Argon2</option>
+                                                    </select>
+                                                    <div class="form-text">비밀번호 저장에 사용할 해시 알고리즘입니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="hash_iterations" class="form-label">해시 반복 횟수</label>
+                                                    <input type="number" class="form-control" id="hash_iterations" name="hash_iterations" min="10000" max="1000000" step="10000" value="{{ security_settings.get('hash_iterations', '100000') }}">
+                                                    <div class="form-text">높을수록 보안성이 높아지지만 처리 속도가 느려집니다.</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="encryption_algorithm" class="form-label">데이터 암호화 알고리즘</label>
+                                                    <select class="form-select" id="encryption_algorithm" name="encryption_algorithm">
+                                                        <option value="aes-256-gcm" {% if security_settings.get('encryption_algorithm') == 'aes-256-gcm' %}selected{% endif %}>AES-256-GCM (권장)</option>
+                                                        <option value="aes-256-cbc" {% if security_settings.get('encryption_algorithm') == 'aes-256-cbc' %}selected{% endif %}>AES-256-CBC</option>
+                                                        <option value="chacha20-poly1305" {% if security_settings.get('encryption_algorithm') == 'chacha20-poly1305' %}selected{% endif %}>ChaCha20-Poly1305</option>
+                                                    </select>
+                                                    <div class="form-text">민감한 데이터 저장에 사용할 암호화 알고리즘입니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="rotate_encryption_keys" name="rotate_encryption_keys" value="1" {% if security_settings.get('rotate_encryption_keys') == 'True' %}checked{% endif %}>
+                                                        <label class="form-check-label" for="rotate_encryption_keys">주기적 암호화 키 교체</label>
+                                                    </div>
+                                                    <div class="form-text">30일마다 새로운 암호화 키를 생성하고 데이터를 재암호화합니다.</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <button type="button" class="btn btn-warning" id="rotateKeysBtn">
+                                                        <i class="fas fa-key"></i> 지금 암호화 키 교체
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> 암호화 설정 저장
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 보안 상태 카드 -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">보안 상태</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            전체 보안 점수
+                            <span class="badge bg-{{ security_stats.overall_score_class }} rounded-pill">{{ security_stats.overall_score }}/100</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            비밀번호 정책
+                            <span class="badge bg-{{ security_stats.password_policy_class }} rounded-pill">{{ security_stats.password_policy_score }}/100</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            세션 관리
+                            <span class="badge bg-{{ security_stats.session_class }} rounded-pill">{{ security_stats.session_score }}/100</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            IP 보안
+                            <span class="badge bg-{{ security_stats.ip_security_class }} rounded-pill">{{ security_stats.ip_security_score }}/100</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            암호화
+                            <span class="badge bg-{{ security_stats.encryption_class }} rounded-pill">{{ security_stats.encryption_score }}/100</span>
+                        </li>
+                    </ul>
+                    
+                    <button type="button" class="btn btn-primary w-100" id="runSecurityScanBtn">
+                        <i class="fas fa-shield-alt"></i> 보안 점검 실행
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">보안 위험</h4>
+                </div>
+                <div class="card-body">
+                    {% if security_risks %}
+                    <ul class="list-group">
+                        {% for risk in security_risks %}
+                        <li class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ risk.title }}</h5>
+                                <small class="text-{{ risk.severity_class }}">{{ risk.severity }}</small>
+                            </div>
+                            <p class="mb-1">{{ risk.description }}</p>
+                            <small>권장 조치: {{ risk.recommendation }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 감지된 보안 위험이 없습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">최근 보안 이벤트</h4>
+                </div>
+                <div class="card-body">
+                    {% if security_events %}
+                    <ul class="list-group">
+                        {% for event in security_events %}
+                        <li class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ event.title }}</h5>
+                                <small>{{ event.timestamp }}</small>
+                            </div>
+                            <p class="mb-1">{{ event.description }}</p>
+                            <small>IP: {{ event.ip }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('admin.system_logs', log_type='security') }}" class="btn btn-outline-secondary btn-sm">
+                            전체 보안 로그 보기
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 최근 보안 이벤트가 없습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 세션 종료 확인 모달 -->
+<div class="modal fade" id="terminateSessionsModal" tabindex="-1" aria-labelledby="terminateSessionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="terminateSessionsModalLabel">모든 사용자 세션 종료 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>모든 사용자를 강제로 로그아웃시키겠습니까?</p>
+                <p>이 작업은 현재 접속 중인 <strong>모든 사용자</strong>를 로그아웃시킵니다. 관리자 세션은 유지됩니다.</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 사용자들은 다시 로그인해야 합니다.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form action="{{ url_for('admin.terminate_all_sessions') }}" method="post">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-sign-out-alt"></i> 모든 세션 종료
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 잠금 해제 확인 모달 -->
+<div class="modal fade" id="resetLockoutsModal" tabindex="-1" aria-labelledby="resetLockoutsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="resetLockoutsModalLabel">계정 잠금 해제 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>모든 계정의 잠금 상태를 해제하시겠습니까?</p>
+                <p>이 작업은 로그인 실패로 인해 잠긴 모든 계정을 해제합니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form action="{{ url_for('admin.reset_all_lockouts') }}" method="post">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-unlock"></i> 모든 잠금 해제
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 키 교체 확인 모달 -->
+<div class="modal fade" id="rotateKeysModal" tabindex="-1" aria-labelledby="rotateKeysModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="rotateKeysModalLabel">암호화 키 교체 확인</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>암호화 키를 지금 교체하시겠습니까?</p>
+                <p>이 작업은 새로운 암호화 키를 생성하고 데이터베이스의 암호화된 데이터를 모두 재암호화합니다.</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>주의:</strong> 키 교체 중에는 시스템 성능이 저하될 수 있습니다.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form action="{{ url_for('admin.rotate_encryption_keys') }}" method="post">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-key"></i> 키 교체 실행
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 세션 종료 버튼
+    document.getElementById('terminateAllSessionsBtn').addEventListener('click', function() {
+        const terminateSessionsModal = new bootstrap.Modal(document.getElementById('terminateSessionsModal'));
+        terminateSessionsModal.show();
+    });
+    
+    // 계정 잠금 해제 버튼
+    document.getElementById('resetLockoutsBtn').addEventListener('click', function() {
+        const resetLockoutsModal = new bootstrap.Modal(document.getElementById('resetLockoutsModal'));
+        resetLockoutsModal.show();
+    });
+    
+    // 암호화 키 교체 버튼
+    document.getElementById('rotateKeysBtn').addEventListener('click', function() {
+        const rotateKeysModal = new bootstrap.Modal(document.getElementById('rotateKeysModal'));
+        rotateKeysModal.show();
+    });
+    
+    // 보안 점검 실행 버튼
+    document.getElementById('runSecurityScanBtn').addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 점검 중...';
+        
+        fetch('/admin/security_settings/run_security_scan', {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('보안 점검이 완료되었습니다. 페이지를 새로고침합니다.', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                showToast(data.message, 'error');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 점검 실행';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('서버 오류가 발생했습니다.', 'error');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 점검 실행';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="home-container">
+    <div class="row">
+        <!-- 사용자 계좌 정보 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-wallet me-2"></i>내 계좌 정보</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">보유 잔액</span>
+                        <span class="fs-4 fw-bold text-primary">{{ user.balance }} {{ system_config.get('currency_symbol', 'CM') }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">계정명</span>
+                        <span>{{ user.nickname }} ({{ user.id }})</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">가입일</span>
+                        <span>{% if user and user.created_at %}{{ user.created_at.split()[0] }}{% else %}가입일 정보 없음{% endif %}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt me-2"></i>송금/거래내역
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 퀵 메뉴 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-star me-2"></i>퀵 메뉴</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a href="{{ url_for('market.index') }}" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-store d-block mb-2 fs-3"></i>
+                                마트
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('games.index') }}" class="btn btn-outline-success w-100 h-100 py-3">
+                                <i class="fas fa-gamepad d-block mb-2 fs-3"></i>
+                                게임
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('stocks.index') }}" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-chart-line d-block mb-2 fs-3"></i>
+                                주식
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-sign-out-alt me-2"></i>
+                                로그아웃
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 공지사항 -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0"><i class="fas fa-bullhorn me-2"></i>공지사항</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if notices %}
+                            {% for notice in notices[:5] %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h5 class="mb-1">{{ notice.title }}</h5>
+                                    <small class="text-muted">{{ notice.timestamp.split()[0] }}</small>
+                                </div>
+                                <p class="mb-1">{{ notice.content }}</p>
+                                <small class="text-muted">작성자: {{ notice.author_id }}</small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center py-4">
+                                <p class="mb-0 text-muted">공지사항이 없습니다.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 주민등록증 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h3 class="mb-0"><i class="fas fa-id-card me-2"></i>내 주민등록증</h3>
+                </div>
+                <div class="card-body">
+                    <div class="id-card mx-auto" style="max-width: 350px; background: linear-gradient(135deg, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color: white; border-radius: 10px; padding: 20px; position: relative;">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h4 class="mb-0">체스제국 주민증</h4>
+                            <div class="id-emblem">🏛️</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <p class="mb-1"><strong>이름:</strong> {{ user.nickname }}</p>
+                                <p class="mb-1"><strong>ID:</strong> {{ user.id }}</p>
+                                <p class="mb-1"><strong>주민번호:</strong> {{ user.birth_date }} - {{ user.number }}</p>
+                                <p class="mb-1"><strong>발급일:</strong> {% if user and user.created_at %}{{ user.created_at.split()[0] }}{% else %}정보 없음{% endif %}</p>
+                                <p class="mb-1"><strong>메모:</strong> {% if user and user.memo %}{{ user.memo }}{% else %}정보 없음{% endif %}</p>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="id-photo bg-light text-dark d-flex justify-content-center align-items-center" style="height: 100px; border-radius: 5px;">
+                                    <i class="fas fa-user-circle fa-3x"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="id-qr mx-auto text-center">
+                            {% if user %}
+    {% set qr_data = '아이디: ' + user.id + '   이름: ' + user.nickname + '   주민등록번호: ' + user.birth_date + '-' + (user.number|default('')) +  '   메모: ' + (user.memo|default('')) %}
+{% else %}
+    {% set qr_data = '사용자 정보 없음' %}
+{% endif %}
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ qr_data }}" alt="QR Code" class="img-fluid" style="max-width: 100px; background: white; padding: 5px; border-radius: 5px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 최근 활동 -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0"><i class="fas fa-history me-2"></i>체스제국 활동</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <h5 class="mb-1">마트 방문</h5>
+                            <p class="mb-1">특별 아이템을 구매하고 혜택을 받으세요.</p>
+                            <a href="{{ url_for('market.index') }}" class="btn btn-sm btn-outline-primary mt-2">바로가기</a>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-1">게임 참여</h5>
+                            <p class="mb-1">다양한 게임에 참여하여 보상을 획득하세요.</p>
+                            <a href="{{ url_for('games.index') }}" class="btn btn-sm btn-outline-success mt-2">바로가기</a>
+                        </div>
+                        <div class="list-group-item">
+                            <h5 class="mb-1">주식 거래</h5>
+                            <p class="mb-1">실시간 변동하는 주식을 매매하세요.</p>
+                            <a href="{{ url_for('stocks.index') }}" class="btn btn-sm btn-outline-warning mt-2">바로가기</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1650 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, jsonify
+import csv
+import os
+import json
+import shutil
+from datetime import datetime
+from app import CSV_FILES
+from utils import read_csv, update_csv, generate_id, get_timestamp, update_user_balance, append_to_csv
+from utils import get_system_config, get_market_items_config, get_stocks_config, get_games_config, get_politicians
+from utils import update_system_config, add_transaction
+from utils import get_achievements, get_user_achievements, get_reward_items, add_points
+
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+# 관리자 권한 확인 데코레이터
+def admin_required(view):
+    def wrapped_view(**kwargs):
+        if not g.user or g.user['is_admin'] != 'True':
+            flash('관리자 권한이 필요합니다.', 'error')
+            return redirect(url_for('auth.login'))
+        return view(**kwargs)
+    wrapped_view.__name__ = view.__name__
+    return wrapped_view
+
+@admin_bp.route('/')
+@admin_required
+def index():
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    
+    # 관리자 대시보드 정보 준비
+    dashboard = {
+        'config_count': {
+            'system': len(read_csv(CSV_FILES['system_config'])),
+            'games': len(get_games_config()),
+            'stocks': len(get_stocks_config()),
+            'market': len(get_market_items_config()),
+            'politicians': len(get_politicians())
+        },
+        'data_count': {
+            'users': len(read_csv(CSV_FILES['users'])),
+            'transactions': len(read_csv(CSV_FILES['transactions'])),
+            'market_logs': len(read_csv(CSV_FILES['market_logs'])),
+            'game_logs': len(read_csv(CSV_FILES['game_logs'])),
+            'login_logs': len(read_csv(CSV_FILES['login_logs']))
+        }
+    }
+    
+    return render_template('admin.html', section='dashboard', system_config=system_config, dashboard=dashboard)
+
+@admin_bp.route('/users')
+@admin_required
+def users():
+    users = read_csv(CSV_FILES['users'])
+    return render_template('admin.html', section='users', users=users)
+
+@admin_bp.route('/users/edit/<user_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_user(user_id):
+    if request.method == 'POST':
+        # 사용자 정보 업데이트
+        users = read_csv(CSV_FILES['users'])
+        updated_users = []
+        
+        for user in users:
+            if user['id'] == user_id:
+                user['nickname'] = request.form['nickname']
+                user['email'] = request.form['email']
+                user['phone'] = request.form['phone']
+                user['balance'] = request.form['balance']
+                user['is_admin'] = 'True' if request.form.get('is_admin') else 'False'
+            updated_users.append(user)
+        
+        update_csv(CSV_FILES['users'], updated_users)
+        flash('사용자 정보가 업데이트되었습니다.', 'success')
+        return redirect(url_for('admin.users'))
+    
+    # 사용자 정보 가져오기
+    user = None
+    users = read_csv(CSV_FILES['users'])
+    for u in users:
+        if u['id'] == user_id:
+            user = u
+            break
+    
+    if not user:
+        flash('사용자를 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.users'))
+    
+    return render_template('admin.html', section='edit_user', user=user)
+
+@admin_bp.route('/users/delete/<user_id>', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    if user_id == 'admin' or user_id == g.user['id']:
+        flash('관리자 계정은 삭제할 수 없습니다.', 'error')
+        return redirect(url_for('admin.users'))
+    
+    users = read_csv(CSV_FILES['users'])
+    updated_users = [user for user in users if user['id'] != user_id]
+    
+    with open(CSV_FILES['users'], 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=users[0].keys())
+        writer.writeheader()
+        writer.writerows(updated_users)
+    
+    flash('사용자가 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/transactions')
+@admin_required
+def transactions():
+    transactions = read_csv(CSV_FILES['transactions'])
+    transactions.sort(key=lambda x: x['timestamp'], reverse=True)
+    return render_template('admin.html', section='transactions', transactions=transactions)
+
+@admin_bp.route('/login_logs')
+@admin_required
+def login_logs():
+    logs = read_csv(CSV_FILES['login_logs'])
+    logs.sort(key=lambda x: x['timestamp'], reverse=True)
+    return render_template('admin.html', section='login_logs', logs=logs)
+
+@admin_bp.route('/game_logs')
+@admin_required
+def game_logs():
+    logs = read_csv(CSV_FILES['game_logs'])
+    logs.sort(key=lambda x: x['timestamp'], reverse=True)
+    return render_template('admin.html', section='game_logs', logs=logs)
+
+@admin_bp.route('/market_logs')
+@admin_required
+def market_logs():
+    logs = read_csv(CSV_FILES['market_logs'])
+    logs.sort(key=lambda x: x['timestamp'], reverse=True)
+    return render_template('admin.html', section='market_logs', logs=logs)
+
+@admin_bp.route('/notices', methods=['GET', 'POST'])
+@admin_required
+def notices():
+    if request.method == 'POST':
+        # 새 공지사항 추가
+        notice = {
+            'id': generate_id(),
+            'title': request.form['title'],
+            'content': request.form['content'],
+            'author_id': g.user['id'],
+            'timestamp': get_timestamp()
+        }
+        append_to_csv(CSV_FILES['notices'], notice)
+        flash('공지사항이 추가되었습니다.', 'success')
+    
+    notices = read_csv(CSV_FILES['notices'])
+    notices.sort(key=lambda x: x['timestamp'], reverse=True)
+    return render_template('admin.html', section='notices', notices=notices)
+
+@admin_bp.route('/notices/delete/<notice_id>', methods=['POST'])
+@admin_required
+def delete_notice(notice_id):
+    notices = read_csv(CSV_FILES['notices'])
+    updated_notices = [notice for notice in notices if notice['id'] != notice_id]
+    
+    with open(CSV_FILES['notices'], 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=notices[0].keys())
+        writer.writeheader()
+        writer.writerows(updated_notices)
+    
+    flash('공지사항이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.notices'))
+
+@admin_bp.route('/items', methods=['GET', 'POST'])
+@admin_required
+def items():
+    if request.method == 'POST':
+        # 새 아이템 추가
+        item = {
+            'id': generate_id(),
+            'name': request.form['name'],
+            'effect': request.form['effect'],
+            'price': request.form['price'],
+            'duration': request.form['duration'],
+            'max_uses': request.form['max_uses']
+        }
+        append_to_csv(CSV_FILES['items'], item)
+        flash('아이템이 추가되었습니다.', 'success')
+    
+    items = read_csv(CSV_FILES['items'])
+    return render_template('admin.html', section='items', items=items)
+
+@admin_bp.route('/items/edit/<item_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_item(item_id):
+    if request.method == 'POST':
+        # 아이템 정보 업데이트
+        items = read_csv(CSV_FILES['items'])
+        updated_items = []
+        
+        for item in items:
+            if item['id'] == item_id:
+                item['name'] = request.form['name']
+                item['effect'] = request.form['effect']
+                item['price'] = request.form['price']
+                item['duration'] = request.form['duration']
+                item['max_uses'] = request.form['max_uses']
+            updated_items.append(item)
+        
+        update_csv(CSV_FILES['items'], updated_items)
+        flash('아이템 정보가 업데이트되었습니다.', 'success')
+        return redirect(url_for('admin.items'))
+    
+    # 아이템 정보 가져오기
+    item = None
+    items = read_csv(CSV_FILES['items'])
+    for i in items:
+        if i['id'] == item_id:
+            item = i
+            break
+    
+    if not item:
+        flash('아이템을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.items'))
+    
+    return render_template('admin.html', section='edit_item', item=item)
+
+@admin_bp.route('/items/delete/<item_id>', methods=['POST'])
+@admin_required
+def delete_item(item_id):
+    items = read_csv(CSV_FILES['items'])
+    updated_items = [item for item in items if item['id'] != item_id]
+    
+    with open(CSV_FILES['items'], 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=items[0].keys())
+        writer.writeheader()
+        writer.writerows(updated_items)
+    
+    flash('아이템이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.items'))
+
+@admin_bp.route('/stocks', methods=['GET', 'POST'])
+@admin_required
+def stocks():
+    if request.method == 'POST':
+        # 새 주식 추가
+        stock = {
+            'id': generate_id(),
+            'name': request.form['name'],
+            'current_price': request.form['current_price'],
+            'previous_price': request.form['current_price'],
+            'change_percent': '0.0',
+            'last_update': get_timestamp()
+        }
+        append_to_csv(CSV_FILES['stocks'], stock)
+        flash('주식이 추가되었습니다.', 'success')
+    
+    stocks = read_csv(CSV_FILES['stocks'])
+    return render_template('admin.html', section='stocks', stocks=stocks)
+
+@admin_bp.route('/stocks/edit/<stock_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_stock(stock_id):
+    if request.method == 'POST':
+        # 주식 정보 업데이트
+        stocks = read_csv(CSV_FILES['stocks'])
+        updated_stocks = []
+        
+        for stock in stocks:
+            if stock['id'] == stock_id:
+                previous_price = float(stock['current_price'])
+                current_price = float(request.form['current_price'])
+                
+                change = ((current_price - previous_price) / previous_price) * 100
+                
+                stock['name'] = request.form['name']
+                stock['previous_price'] = str(previous_price)
+                stock['current_price'] = str(current_price)
+                stock['change_percent'] = f"{change:.2f}"
+                stock['last_update'] = get_timestamp()
+            updated_stocks.append(stock)
+        
+        update_csv(CSV_FILES['stocks'], updated_stocks)
+        flash('주식 정보가 업데이트되었습니다.', 'success')
+        return redirect(url_for('admin.stocks'))
+    
+    # 주식 정보 가져오기
+    stock = None
+    stocks = read_csv(CSV_FILES['stocks'])
+    for s in stocks:
+        if s['id'] == stock_id:
+            stock = s
+            break
+    
+    if not stock:
+        flash('주식을 찾을 수 없습니다.', 'error')
+        return redirect(url_for('admin.stocks'))
+    
+    return render_template('admin.html', section='edit_stock', stock=stock)
+
+@admin_bp.route('/stocks/delete/<stock_id>', methods=['POST'])
+@admin_required
+def delete_stock(stock_id):
+    stocks = read_csv(CSV_FILES['stocks'])
+    updated_stocks = [stock for stock in stocks if stock['id'] != stock_id]
+    
+    with open(CSV_FILES['stocks'], 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=stocks[0].keys())
+        writer.writeheader()
+        writer.writerows(updated_stocks)
+    
+    flash('주식이 삭제되었습니다.', 'success')
+    return redirect(url_for('admin.stocks'))
+
+@admin_bp.route('/send_money', methods=['POST'])
+@admin_required
+def send_money():
+    receiver_id = request.form['receiver_id']
+    amount = int(request.form['amount'])
+    
+    # 수신자 확인
+    users = read_csv(CSV_FILES['users'])
+    receiver = None
+    for user in users:
+        if user['id'] == receiver_id:
+            receiver = user
+            break
+    
+    if not receiver:
+        flash('존재하지 않는 사용자입니다.', 'error')
+        return redirect(url_for('admin.users'))
+    
+    # 송금 처리
+    update_user_balance(receiver_id, amount, "add")
+    
+    # 거래 기록 추가
+    transaction = {
+        'id': generate_id(),
+        'sender_id': g.user['id'],
+        'receiver_id': receiver_id,
+        'amount': str(amount),
+        'type': 'admin_transfer',
+        'timestamp': get_timestamp()
+    }
+    append_to_csv(CSV_FILES['transactions'], transaction)
+    
+    flash(f'{receiver_id}님에게 {amount}원을 송금했습니다.', 'success')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/system', methods=['GET', 'POST'])
+@admin_required
+def system():
+    # 시스템 설정 업데이트 처리
+    if request.method == 'POST':
+        setting_key = request.form.get('setting_key')
+        setting_value = request.form.get('setting_value')
+        
+        if setting_key and setting_value is not None:
+            success = update_system_config(setting_key, setting_value)
+            if success:
+                flash(f'시스템 설정 "{setting_key}"이(가) 업데이트되었습니다.', 'success')
+            else:
+                flash('시스템 설정 업데이트에 실패했습니다.', 'error')
+    
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    
+    # CSV 파일 크기 및 상태 확인
+    csv_stats = []
+    for key, path in CSV_FILES.items():
+        if os.path.exists(path):
+            size = os.path.getsize(path)
+            row_count = 0
+            with open(path, 'r', encoding='utf-8') as file:
+                row_count = sum(1 for _ in file) - 1  # 헤더 제외
+            
+            csv_stats.append({
+                'name': key,
+                'path': path,
+                'size': f"{size / 1024:.2f} KB",
+                'rows': row_count
+            })
+    
+    return render_template('admin.html', section='system', csv_stats=csv_stats, system_config=system_config)
+
+@admin_bp.route('/config/system', methods=['GET', 'POST'])
+@admin_required
+def config_system():
+    """시스템 설정 관리"""
+    if request.method == 'POST':
+        # 시스템 설정 업데이트
+        key = request.form.get('key')
+        value = request.form.get('value')
+        description = request.form.get('description')
+        
+        # 새 설정 추가
+        if key and value and description and 'add_setting' in request.form:
+            configs = read_csv(CSV_FILES['system_config'])
+            
+            # 이미 존재하는 키 확인
+            exists = False
+            for config in configs:
+                if config['key'] == key:
+                    exists = True
+                    break
+            
+            if exists:
+                flash(f'이미 존재하는 설정 키입니다: {key}', 'error')
+            else:
+                new_config = {
+                    'key': key,
+                    'value': value,
+                    'description': description
+                }
+                append_to_csv(CSV_FILES['system_config'], new_config)
+                flash('새 시스템 설정이 추가되었습니다.', 'success')
+        
+        # 설정 일괄 업데이트
+        elif 'update_settings' in request.form:
+            configs = read_csv(CSV_FILES['system_config'])
+            updated_configs = []
+            
+            for config in configs:
+                key = config['key']
+                if key in request.form:
+                    config['value'] = request.form[key]
+                updated_configs.append(config)
+            
+            update_csv(CSV_FILES['system_config'], updated_configs)
+            flash('시스템 설정이 업데이트되었습니다.', 'success')
+    
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    configs = read_csv(CSV_FILES['system_config'])
+    
+    return render_template('admin.html', section='config_system', configs=configs, system_config=system_config)
+
+@admin_bp.route('/config/games', methods=['GET', 'POST'])
+@admin_required
+def config_games():
+    """게임 설정 관리"""
+    if request.method == 'POST':
+        # 게임 설정 업데이트
+        game_id = request.form.get('id')
+        name = request.form.get('name')
+        description = request.form.get('description')
+        min_bet = request.form.get('min_bet')
+        max_bet = request.form.get('max_bet')
+        enabled = request.form.get('enabled', 'False')
+        win_multiplier = request.form.get('win_multiplier')
+        special_win_multiplier = request.form.get('special_win_multiplier')
+        draw_multiplier = request.form.get('draw_multiplier')
+        
+        # 새 게임 추가
+        if game_id and name and 'add_game' in request.form:
+            games = read_csv(CSV_FILES['games_config'])
+            
+            # 이미 존재하는 게임 ID 확인
+            exists = False
+            for game in games:
+                if game['id'] == game_id:
+                    exists = True
+                    break
+            
+            if exists:
+                flash(f'이미 존재하는 게임 ID입니다: {game_id}', 'error')
+            else:
+                new_game = {
+                    'id': game_id,
+                    'name': name,
+                    'description': description or '',
+                    'min_bet': min_bet or '100',
+                    'max_bet': max_bet or '10000',
+                    'enabled': enabled,
+                    'win_multiplier': win_multiplier or '1.5',
+                    'special_win_multiplier': special_win_multiplier or '2.0',
+                    'draw_multiplier': draw_multiplier or '1.0'
+                }
+                append_to_csv(CSV_FILES['games_config'], new_game)
+                flash('새 게임 설정이 추가되었습니다.', 'success')
+        
+        # 기존 게임 설정 업데이트
+        elif 'update_game' in request.form:
+            game_id = request.form.get('edit_id')
+            games = read_csv(CSV_FILES['games_config'])
+            updated_games = []
+            
+            for game in games:
+                if game['id'] == game_id:
+                    game['name'] = request.form.get('edit_name') or game['name']
+                    game['description'] = request.form.get('edit_description') or game['description']
+                    game['min_bet'] = request.form.get('edit_min_bet') or game['min_bet']
+                    game['max_bet'] = request.form.get('edit_max_bet') or game['max_bet']
+                    game['enabled'] = 'True' if request.form.get('edit_enabled') else 'False'
+                    game['win_multiplier'] = request.form.get('edit_win_multiplier') or game['win_multiplier']
+                    game['special_win_multiplier'] = request.form.get('edit_special_win_multiplier') or game['special_win_multiplier']
+                    game['draw_multiplier'] = request.form.get('edit_draw_multiplier') or game['draw_multiplier']
+                updated_games.append(game)
+            
+            update_csv(CSV_FILES['games_config'], updated_games)
+            flash('게임 설정이 업데이트되었습니다.', 'success')
+        
+        # 게임 삭제
+        elif 'delete_game' in request.form:
+            game_id = request.form.get('delete_id')
+            games = read_csv(CSV_FILES['games_config'])
+            updated_games = [game for game in games if game['id'] != game_id]
+            
+            update_csv(CSV_FILES['games_config'], updated_games)
+            flash('게임 설정이 삭제되었습니다.', 'success')
+    
+    # 게임 설정 불러오기
+    games = get_games_config()
+    
+    return render_template('admin.html', section='config_games', games=games)
+
+@admin_bp.route('/config/stocks', methods=['GET', 'POST'])
+@admin_required
+def config_stocks():
+    """주식 설정 관리"""
+    if request.method == 'POST':
+        # 주식 설정 업데이트
+        stock_id = request.form.get('id')
+        name = request.form.get('name')
+        code = request.form.get('code')
+        sector = request.form.get('sector')
+        initial_price = request.form.get('initial_price')
+        min_price = request.form.get('min_price')
+        max_price = request.form.get('max_price')
+        volatility = request.form.get('volatility')
+        description = request.form.get('description')
+        
+        # 새 주식 추가
+        if stock_id and name and 'add_stock' in request.form:
+            stocks = read_csv(CSV_FILES['stocks_config'])
+            
+            # 이미 존재하는 주식 ID 확인
+            exists = False
+            for stock in stocks:
+                if stock['id'] == stock_id:
+                    exists = True
+                    break
+            
+            if exists:
+                flash(f'이미 존재하는 주식 ID입니다: {stock_id}', 'error')
+            else:
+                new_stock = {
+                    'id': stock_id,
+                    'name': name,
+                    'code': code or '',
+                    'sector': sector or '',
+                    'initial_price': initial_price or '10000',
+                    'min_price': min_price or '1000',
+                    'max_price': max_price or '100000',
+                    'volatility': volatility or '5',
+                    'description': description or ''
+                }
+                append_to_csv(CSV_FILES['stocks_config'], new_stock)
+                flash('새 주식 설정이 추가되었습니다.', 'success')
+                
+                # 실시간 주식 테이블에도 추가
+                live_stock = {
+                    'id': stock_id,
+                    'name': name,
+                    'current_price': initial_price or '10000',
+                    'previous_price': initial_price or '10000',
+                    'change_percent': '0.0',
+                    'last_update': get_timestamp()
+                }
+                append_to_csv(CSV_FILES['stocks'], live_stock)
+        
+        # 기존 주식 설정 업데이트
+        elif 'update_stock' in request.form:
+            stock_id = request.form.get('edit_id')
+            stocks = read_csv(CSV_FILES['stocks_config'])
+            updated_stocks = []
+            
+            for stock in stocks:
+                if stock['id'] == stock_id:
+                    stock['name'] = request.form.get('edit_name') or stock['name']
+                    stock['code'] = request.form.get('edit_code') or stock['code']
+                    stock['sector'] = request.form.get('edit_sector') or stock['sector']
+                    stock['initial_price'] = request.form.get('edit_initial_price') or stock['initial_price']
+                    stock['min_price'] = request.form.get('edit_min_price') or stock['min_price']
+                    stock['max_price'] = request.form.get('edit_max_price') or stock['max_price']
+                    stock['volatility'] = request.form.get('edit_volatility') or stock['volatility']
+                    stock['description'] = request.form.get('edit_description') or stock['description']
+                updated_stocks.append(stock)
+            
+            update_csv(CSV_FILES['stocks_config'], updated_stocks)
+            flash('주식 설정이 업데이트되었습니다.', 'success')
+            
+            # 실시간 주식 테이블도 이름 업데이트
+            live_stocks = read_csv(CSV_FILES['stocks'])
+            updated_live_stocks = []
+            for stock in live_stocks:
+                if stock['id'] == stock_id:
+                    stock['name'] = request.form.get('edit_name') or stock['name']
+                updated_live_stocks.append(stock)
+            update_csv(CSV_FILES['stocks'], updated_live_stocks)
+    
+    # 주식 설정 불러오기
+    stocks_config = get_stocks_config()
+    
+    return render_template('admin.html', section='config_stocks', stocks=stocks_config)
+
+@admin_bp.route('/config/politicians', methods=['GET', 'POST'])
+@admin_required
+def config_politicians():
+    """정치인 설정 관리"""
+    if request.method == 'POST':
+        # 정치인 설정 업데이트
+        politician_id = request.form.get('id')
+        name = request.form.get('name')
+        party = request.form.get('party')
+        power = request.form.get('power')
+        special = request.form.get('special', 'False')
+        image_url = request.form.get('image_url')
+        description = request.form.get('description')
+        
+        # 새 정치인 추가
+        if politician_id and name and 'add_politician' in request.form:
+            politicians = read_csv(CSV_FILES['politicians'])
+            
+            # 이미 존재하는 정치인 ID 확인
+            exists = False
+            for politician in politicians:
+                if politician['id'] == politician_id:
+                    exists = True
+                    break
+            
+            if exists:
+                flash(f'이미 존재하는 정치인 ID입니다: {politician_id}', 'error')
+            else:
+                new_politician = {
+                    'id': politician_id,
+                    'name': name,
+                    'party': party or '',
+                    'power': power or '5',
+                    'special': special,
+                    'image_url': image_url or '',
+                    'description': description or ''
+                }
+                append_to_csv(CSV_FILES['politicians'], new_politician)
+                flash('새 정치인 설정이 추가되었습니다.', 'success')
+        
+        # 기존 정치인 설정 업데이트
+        elif 'update_politician' in request.form:
+            politician_id = request.form.get('edit_id')
+            politicians = read_csv(CSV_FILES['politicians'])
+            updated_politicians = []
+            
+            for politician in politicians:
+                if politician['id'] == politician_id:
+                    politician['name'] = request.form.get('edit_name') or politician['name']
+                    politician['party'] = request.form.get('edit_party') or politician['party']
+                    politician['power'] = request.form.get('edit_power') or politician['power']
+                    politician['special'] = 'True' if request.form.get('edit_special') else 'False'
+                    politician['image_url'] = request.form.get('edit_image_url') or politician['image_url']
+                    politician['description'] = request.form.get('edit_description') or politician['description']
+                updated_politicians.append(politician)
+            
+            update_csv(CSV_FILES['politicians'], updated_politicians)
+            flash('정치인 설정이 업데이트되었습니다.', 'success')
+        
+        # 정치인 삭제
+        elif 'delete_politician' in request.form:
+            politician_id = request.form.get('delete_id')
+            politicians = read_csv(CSV_FILES['politicians'])
+            updated_politicians = [p for p in politicians if p['id'] != politician_id]
+            
+            update_csv(CSV_FILES['politicians'], updated_politicians)
+            flash('정치인 설정이 삭제되었습니다.', 'success')
+    
+    # 정치인 설정 불러오기
+    politicians = get_politicians()
+    
+    return render_template('admin.html', section='config_politicians', politicians=politicians)
+
+@admin_bp.route('/config/market', methods=['GET', 'POST'])
+@admin_required
+def config_market():
+    """마켓 아이템 설정 관리"""
+    if request.method == 'POST':
+        # 마켓 아이템 설정 업데이트
+        item_id = request.form.get('id')
+        name = request.form.get('name')
+        effect = request.form.get('effect')
+        price = request.form.get('price')
+        duration = request.form.get('duration')
+        max_uses = request.form.get('max_uses')
+        category = request.form.get('category')
+        description = request.form.get('description')
+        image_url = request.form.get('image_url')
+        
+        # 새 아이템 추가
+        if item_id and name and 'add_item' in request.form:
+            items = read_csv(CSV_FILES['market_items'])
+            
+            # 이미 존재하는 아이템 ID 확인
+            exists = False
+            for item in items:
+                if item['id'] == item_id:
+                    exists = True
+                    break
+            
+            if exists:
+                flash(f'이미 존재하는 아이템 ID입니다: {item_id}', 'error')
+            else:
+                new_item = {
+                    'id': item_id,
+                    'name': name,
+                    'effect': effect or '',
+                    'price': price or '1000',
+                    'duration': duration or '1',
+                    'max_uses': max_uses or '1',
+                    'category': category or '기타',
+                    'description': description or '',
+                    'image_url': image_url or ''
+                }
+                append_to_csv(CSV_FILES['market_items'], new_item)
+                flash('새 마켓 아이템 설정이 추가되었습니다.', 'success')
+                
+                # 실제 아이템 테이블에도 추가
+                real_item = {
+                    'id': item_id,
+                    'name': name,
+                    'effect': effect or '',
+                    'price': price or '1000',
+                    'duration': duration or '1',
+                    'max_uses': max_uses or '1'
+                }
+                append_to_csv(CSV_FILES['items'], real_item)
+        
+        # 기존 아이템 설정 업데이트
+        elif 'update_item' in request.form:
+            item_id = request.form.get('edit_id')
+            items = read_csv(CSV_FILES['market_items'])
+            updated_items = []
+            
+            for item in items:
+                if item['id'] == item_id:
+                    item['name'] = request.form.get('edit_name') or item['name']
+                    item['effect'] = request.form.get('edit_effect') or item['effect']
+                    item['price'] = request.form.get('edit_price') or item['price']
+                    item['duration'] = request.form.get('edit_duration') or item['duration']
+                    item['max_uses'] = request.form.get('edit_max_uses') or item['max_uses']
+                    item['category'] = request.form.get('edit_category') or item['category']
+                    item['description'] = request.form.get('edit_description') or item['description']
+                    item['image_url'] = request.form.get('edit_image_url') or item['image_url']
+                updated_items.append(item)
+            
+            update_csv(CSV_FILES['market_items'], updated_items)
+            flash('마켓 아이템 설정이 업데이트되었습니다.', 'success')
+            
+            # 실제 아이템 테이블도 업데이트
+            real_items = read_csv(CSV_FILES['items'])
+            updated_real_items = []
+            for item in real_items:
+                if item['id'] == item_id:
+                    item['name'] = request.form.get('edit_name') or item['name']
+                    item['effect'] = request.form.get('edit_effect') or item['effect']
+                    item['price'] = request.form.get('edit_price') or item['price']
+                    item['duration'] = request.form.get('edit_duration') or item['duration']
+                    item['max_uses'] = request.form.get('edit_max_uses') or item['max_uses']
+                updated_real_items.append(item)
+            update_csv(CSV_FILES['items'], updated_real_items)
+    
+    # 마켓 아이템 설정 불러오기
+    market_items = get_market_items_config()
+    
+    return render_template('admin.html', section='config_market', items=market_items)
+
+@admin_bp.route('/csv_editor', methods=['GET'])
+@admin_required
+def csv_editor():
+    """CSV 파일 직접 편집 기능"""
+    # 모든 CSV 파일 목록
+    csv_files = [
+        {'name': 'system_config', 'path': CSV_FILES['system_config'], 'description': '시스템 설정'},
+        {'name': 'games_config', 'path': CSV_FILES['games_config'], 'description': '게임 설정'},
+        {'name': 'stocks_config', 'path': CSV_FILES['stocks_config'], 'description': '주식 설정'},
+        {'name': 'politicians', 'path': CSV_FILES['politicians'], 'description': '정치인 설정'},
+        {'name': 'market_items', 'path': CSV_FILES['market_items'], 'description': '마켓 아이템 설정'},
+        {'name': 'users', 'path': CSV_FILES['users'], 'description': '사용자 데이터'},
+        {'name': 'transactions', 'path': CSV_FILES['transactions'], 'description': '거래 내역'},
+        {'name': 'login_logs', 'path': CSV_FILES['login_logs'], 'description': '로그인 로그'},
+        {'name': 'game_logs', 'path': CSV_FILES['game_logs'], 'description': '게임 로그'},
+        {'name': 'market_logs', 'path': CSV_FILES['market_logs'], 'description': '마켓 로그'},
+        {'name': 'notices', 'path': CSV_FILES['notices'], 'description': '공지사항'},
+        {'name': 'chat_messages', 'path': CSV_FILES['chat_messages'], 'description': '채팅 메시지'},
+        {'name': 'stocks', 'path': CSV_FILES['stocks'], 'description': '주식 데이터'},
+        {'name': 'items', 'path': CSV_FILES['items'], 'description': '아이템 데이터'},
+        {'name': 'achievements', 'path': CSV_FILES['achievements'], 'description': '업적 설정'},
+        {'name': 'user_achievements', 'path': CSV_FILES['user_achievements'], 'description': '사용자 업적 데이터'},
+        {'name': 'levels', 'path': CSV_FILES['levels'], 'description': '레벨 시스템 설정'},
+        {'name': 'points', 'path': CSV_FILES['points'], 'description': '포인트 적립 규칙'},
+        {'name': 'point_logs', 'path': CSV_FILES['point_logs'], 'description': '포인트 적립 내역'},
+        {'name': 'quests', 'path': CSV_FILES['quests'], 'description': '퀘스트 설정'},
+        {'name': 'user_quests', 'path': CSV_FILES['user_quests'], 'description': '사용자 퀘스트 진행 상황'},
+        {'name': 'reward_items', 'path': CSV_FILES['reward_items'], 'description': '보상 아이템 설정'},
+        {'name': 'friends', 'path': CSV_FILES['friends'], 'description': '친구 관계 데이터'},
+        {'name': 'friend_activities', 'path': CSV_FILES['friend_activities'], 'description': '친구 활동 내역'}
+    ]
+    
+    file_name = request.args.get('file')
+    csv_data = None
+    csv_headers = None
+    
+    if file_name and file_name in CSV_FILES:
+        try:
+            # CSV 파일 내용 읽기
+            with open(CSV_FILES[file_name], 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                csv_headers = next(reader)  # 헤더
+                csv_data = list(reader)     # 데이터
+        except Exception as e:
+            flash(f'CSV 파일을 읽는 중 오류가 발생했습니다: {str(e)}', 'error')
+    
+    return render_template('admin.html', section='csv_editor', 
+                          csv_files=csv_files, 
+                          file_name=file_name,
+                          csv_data=csv_data,
+                          csv_headers=csv_headers)
+
+@admin_bp.route('/csv_editor/save', methods=['POST'])
+@admin_required
+def save_csv():
+    """CSV 파일 저장 기능"""
+    file_name = request.form.get('file_name')
+    csv_data = request.form.get('csv_data')
+    
+    if not file_name or file_name not in CSV_FILES:
+        flash('유효하지 않은 파일 이름입니다.', 'error')
+        return redirect(url_for('admin.csv_editor'))
+    
+    try:
+        # JSON 문자열을 리스트로 변환
+        data = json.loads(csv_data)
+        headers = data[0]
+        rows = data[1:]
+        
+        # CSV 파일로 저장
+        with open(CSV_FILES[file_name], 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(rows)
+        
+        flash(f'{file_name} 파일이 성공적으로 저장되었습니다.', 'success')
+    except Exception as e:
+        flash(f'CSV 파일을 저장하는 중 오류가 발생했습니다: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.csv_editor', file=file_name))
+
+@admin_bp.route('/csv/get/<file_name>', methods=['GET'])
+@admin_required
+def get_csv_data(file_name):
+    """CSV 파일 데이터 JSON 형식으로 반환 (AJAX용)"""
+    if file_name not in CSV_FILES:
+        return jsonify({'error': '유효하지 않은 파일 이름입니다.'}), 400
+    
+    try:
+        with open(CSV_FILES[file_name], 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            data = list(reader)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 새로운 고급 관리자 기능들
+
+@admin_bp.route('/backup_data', methods=['GET', 'POST'])
+@admin_required
+def backup_data():
+    """데이터 백업 기능"""
+    import shutil
+    from datetime import datetime
+    
+    # 백업 결과 메시지
+    backup_status = None
+    backup_files = []
+    
+    # 백업 경로 설정
+    backup_dir = os.path.join(os.path.dirname(__file__), 'data', 'backups')
+    
+    # 백업 디렉토리가 없으면 생성
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+    
+    # 기존 백업 목록
+    try:
+        backup_list = sorted([d for d in os.listdir(backup_dir) if os.path.isdir(os.path.join(backup_dir, d))], reverse=True)
+    except:
+        backup_list = []
+    
+    if request.method == 'POST':
+        try:
+            # 백업 타임스탬프 (폴더명)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_path = os.path.join(backup_dir, timestamp)
+            
+            # 백업 디렉토리 생성
+            os.makedirs(backup_path, exist_ok=True)
+            
+            # CSV 파일 백업
+            for file_key, file_path in CSV_FILES.items():
+                if os.path.exists(file_path):
+                    dest_path = os.path.join(backup_path, os.path.basename(file_path))
+                    shutil.copy2(file_path, dest_path)
+                    backup_files.append(os.path.basename(file_path))
+            
+            backup_status = {
+                'success': True,
+                'timestamp': timestamp,
+                'file_count': len(backup_files),
+                'files': backup_files
+            }
+            
+            flash(f'시스템 데이터 백업이 성공적으로 완료되었습니다. ({len(backup_files)}개 파일)', 'success')
+            
+            # 백업 목록 새로고침
+            backup_list = sorted([d for d in os.listdir(backup_dir) if os.path.isdir(os.path.join(backup_dir, d))], reverse=True)
+            
+        except Exception as e:
+            backup_status = {
+                'success': False,
+                'error': str(e)
+            }
+            flash(f'백업 중 오류가 발생했습니다: {str(e)}', 'error')
+    
+    return render_template('admin_backup_data.html', 
+                           section='backup_data', 
+                           backup_status=backup_status,
+                           backup_list=backup_list,
+                           backup_dir=backup_dir)
+
+@admin_bp.route('/restore_data', methods=['GET', 'POST'])
+@admin_required
+def restore_data():
+    """데이터 복원 기능"""
+    import shutil
+    
+    # 백업 경로 설정
+    backup_dir = os.path.join(os.path.dirname(__file__), 'data', 'backups')
+    
+    # 백업 디렉토리가 없으면 생성
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+    
+    # 기존 백업 목록
+    try:
+        backup_list = sorted([d for d in os.listdir(backup_dir) if os.path.isdir(os.path.join(backup_dir, d))], reverse=True)
+    except:
+        backup_list = []
+    
+    restore_status = None
+    
+    if request.method == 'POST':
+        try:
+            backup_id = request.form.get('backup_id')
+            if not backup_id:
+                flash('복원할 백업을 선택해주세요.', 'error')
+                return redirect(url_for('admin.restore_data'))
+            
+            backup_path = os.path.join(backup_dir, backup_id)
+            if not os.path.exists(backup_path):
+                flash('선택한 백업이 존재하지 않습니다.', 'error')
+                return redirect(url_for('admin.restore_data'))
+            
+            restored_files = []
+            
+            # 백업에서 CSV 파일 복원
+            for file_name in os.listdir(backup_path):
+                source_path = os.path.join(backup_path, file_name)
+                
+                # CSV_FILES에서 대상 경로 찾기
+                for file_key, file_path in CSV_FILES.items():
+                    if os.path.basename(file_path) == file_name:
+                        shutil.copy2(source_path, file_path)
+                        restored_files.append(file_name)
+                        break
+            
+            restore_status = {
+                'success': True,
+                'backup_id': backup_id,
+                'file_count': len(restored_files),
+                'files': restored_files
+            }
+            
+            flash(f'백업 데이터 복원이 성공적으로 완료되었습니다. ({len(restored_files)}개 파일)', 'success')
+            
+        except Exception as e:
+            restore_status = {
+                'success': False,
+                'error': str(e)
+            }
+            flash(f'복원 중 오류가 발생했습니다: {str(e)}', 'error')
+    
+    return render_template('admin_restore_data.html', 
+                           section='restore_data', 
+                           restore_status=restore_status,
+                           backup_list=backup_list)
+
+@admin_bp.route('/system_logs', methods=['GET'])
+@admin_required
+def system_logs():
+    """시스템 로그 조회"""
+    import logging
+    
+    # 로그 파일 경로
+    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+    log_file = os.path.join(log_dir, 'system.log')
+    
+    # 로그 디렉토리가 없으면 생성
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # 로그 파일이 없으면 생성
+    if not os.path.exists(log_file):
+        with open(log_file, 'w', encoding='utf-8') as f:
+            f.write(f"# 시스템 로그 파일 생성됨: {get_timestamp()}\n")
+    
+    # 로그 파일 내용 읽기
+    try:
+        with open(log_file, 'r', encoding='utf-8') as f:
+            log_content = f.readlines()
+        
+        # 최대 1000줄만 표시
+        if len(log_content) > 1000:
+            log_content = log_content[-1000:]
+    except:
+        log_content = ['로그 파일을 읽을 수 없습니다.']
+    
+    return render_template('admin_system_logs.html', 
+                           section='system_logs', 
+                           log_content=log_content,
+                           log_file=log_file)
+
+@admin_bp.route('/api_settings', methods=['GET', 'POST'])
+@admin_required
+def api_settings():
+    """API 설정 관리"""
+    from secrets import token_hex
+    
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    
+    # 현재 API 키 정보
+    api_keys = []
+    
+    # API 키 파일 경로
+    api_keys_file = os.path.join(os.path.dirname(__file__), 'data', 'api_keys.csv')
+    
+    # API 키 파일이 없으면 생성
+    if not os.path.exists(api_keys_file):
+        with open(api_keys_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'key', 'description', 'created_at', 'permissions', 'status'])
+    
+    # API 키 목록 불러오기
+    try:
+        with open(api_keys_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            api_keys = list(reader)
+    except:
+        api_keys = []
+    
+    if request.method == 'POST':
+        if 'generate_key' in request.form:
+            # 새 API 키 생성
+            new_key = token_hex(16)
+            description = request.form.get('description', '새 API 키')
+            permissions = request.form.get('permissions', 'read')
+            
+            new_api_key = {
+                'id': generate_id(),
+                'key': new_key,
+                'description': description,
+                'created_at': get_timestamp(),
+                'permissions': permissions,
+                'status': 'active'
+            }
+            
+            # API 키 저장
+            with open(api_keys_file, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=new_api_key.keys())
+                if f.tell() == 0:
+                    writer.writeheader()
+                writer.writerow(new_api_key)
+            
+            flash(f'새 API 키가 생성되었습니다: {new_key}', 'success')
+            return redirect(url_for('admin.api_settings'))
+        
+        elif 'revoke_key' in request.form:
+            # API 키 취소
+            key_id = request.form.get('key_id')
+            
+            if not key_id:
+                flash('취소할 API 키 ID를 지정해주세요.', 'error')
+            else:
+                updated_keys = []
+                for key in api_keys:
+                    if key['id'] == key_id:
+                        key['status'] = 'revoked'
+                    updated_keys.append(key)
+                
+                # 변경된 API 키 목록 저장
+                with open(api_keys_file, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=updated_keys[0].keys())
+                    writer.writeheader()
+                    writer.writerows(updated_keys)
+                
+                flash('API 키가 취소되었습니다.', 'success')
+                return redirect(url_for('admin.api_settings'))
+    
+    return render_template('admin_api_settings.html', 
+                           section='api_settings', 
+                           api_keys=api_keys,
+                           system_config=system_config)
+
+@admin_bp.route('/security_settings', methods=['GET', 'POST'])
+@admin_required
+def security_settings():
+    """보안 설정 관리"""
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    
+    if request.method == 'POST':
+        # 보안 설정 업데이트
+        password_min_length = request.form.get('password_min_length')
+        require_captcha = request.form.get('require_captcha', 'False')
+        max_login_attempts = request.form.get('max_login_attempts')
+        session_expire_minutes = request.form.get('session_expire_minutes')
+        ip_whitelist = request.form.get('ip_whitelist')
+        
+        # 시스템 설정에 반영
+        if password_min_length:
+            update_system_config('password_min_length', password_min_length)
+        
+        update_system_config('require_captcha', require_captcha)
+        
+        if max_login_attempts:
+            update_system_config('max_login_attempts', max_login_attempts)
+        
+        if session_expire_minutes:
+            update_system_config('session_expire_minutes', session_expire_minutes)
+        
+        if ip_whitelist is not None:
+            update_system_config('ip_whitelist', ip_whitelist)
+        
+        flash('보안 설정이 업데이트되었습니다.', 'success')
+        
+        # 최신 설정 다시 불러오기
+        system_config = get_system_config()
+    
+    return render_template('admin_security_settings.html', 
+                           section='security_settings', 
+                           system_config=system_config)
+
+@admin_bp.route('/batch_operations', methods=['GET', 'POST'])
+@admin_required
+def batch_operations():
+    """일괄 작업 관리"""
+    # 시스템 설정 불러오기
+    system_config = get_system_config()
+    
+    # 작업 결과
+    batch_result = None
+    
+    if request.method == 'POST':
+        operation = request.form.get('operation')
+        
+        if operation == 'reset_daily_bonuses':
+            # 모든 사용자의 일일 보너스 초기화
+            users = read_csv(CSV_FILES['users'])
+            updated_users = []
+            
+            for user in users:
+                user['last_bonus'] = ''  # 마지막 보너스 날짜 초기화
+                updated_users.append(user)
+            
+            update_csv(CSV_FILES['users'], updated_users)
+            
+            batch_result = {
+                'operation': '일일 보너스 초기화',
+                'affected_users': len(users),
+                'success': True
+            }
+            
+            flash(f'모든 사용자({len(users)}명)의 일일 보너스가 초기화되었습니다.', 'success')
+        
+        elif operation == 'add_bonus_all':
+            # 모든 사용자에게 보너스 지급
+            amount = int(request.form.get('bonus_amount', 0))
+            description = request.form.get('bonus_description', '관리자 보너스')
+            
+            if amount <= 0:
+                flash('유효한 보너스 금액을 입력해주세요.', 'error')
+            else:
+                users = read_csv(CSV_FILES['users'])
+                updated_count = 0
+                
+                for user in users:
+                    # 관리자에게는 지급하지 않음
+                    if user['is_admin'] != 'True':
+                        # 사용자 잔액 업데이트
+                        update_user_balance(user['id'], amount, "add")
+                        
+                        # 거래 기록 추가
+                        add_transaction('system', user['id'], amount, 'admin_bonus')
+                        updated_count += 1
+                
+                batch_result = {
+                    'operation': '전체 사용자 보너스 지급',
+                    'amount': amount,
+                    'affected_users': updated_count,
+                    'description': description,
+                    'success': True
+                }
+                
+                flash(f'모든 사용자({updated_count}명)에게 {amount}{system_config.get("currency_name", "체스머니")}가 지급되었습니다.', 'success')
+        
+        elif operation == 'reset_stock_prices':
+            # 모든 주식 가격 초기화
+            stocks = read_csv(CSV_FILES['stocks'])
+            stocks_config = get_stocks_config()
+            
+            # 주식 설정을 ID로 매핑
+            config_map = {}
+            for config in stocks_config:
+                config_map[config['id']] = config
+            
+            updated_stocks = []
+            
+            for stock in stocks:
+                stock_id = stock['id']
+                
+                # 해당 주식의 설정 정보 가져오기
+                if stock_id in config_map:
+                    initial_price = config_map[stock_id].get('initial_price', '10000')
+                    stock['current_price'] = initial_price
+                    stock['previous_price'] = initial_price
+                    stock['change_percent'] = '0.00'
+                
+                updated_stocks.append(stock)
+            
+            update_csv(CSV_FILES['stocks'], updated_stocks)
+            
+            batch_result = {
+                'operation': '주식 가격 초기화',
+                'affected_stocks': len(updated_stocks),
+                'success': True
+            }
+            
+            flash(f'모든 주식({len(updated_stocks)}개)의 가격이 초기화되었습니다.', 'success')
+    
+    return render_template('admin_batch_operations.html', 
+                           section='batch_operations', 
+                           batch_result=batch_result,
+                           system_config=system_config)
+
+# 업적 시스템 관리
+@admin_bp.route('/config/achievements', methods=['GET', 'POST'])
+@admin_required
+def config_achievements():
+    """업적 시스템 관리"""
+    if request.method == 'POST':
+        # 업적 추가 처리
+        if 'add_achievement' in request.form:
+            achievement = {
+                'id': request.form.get('id'),
+                'code': request.form.get('code'),
+                'name': request.form.get('name'),
+                'description': request.form.get('description'),
+                'category': request.form.get('category'),
+                'level': request.form.get('level'),
+                'points': request.form.get('points'),
+                'requirement': request.form.get('requirement'),
+                'requirement_value': request.form.get('requirement_value'),
+                'hidden': 'True' if request.form.get('hidden') else 'False',
+                'icon_url': request.form.get('icon_url'),
+                'enabled': 'True' if request.form.get('enabled') else 'False'
+            }
+            
+            # 업적 추가
+            achievements = read_csv(CSV_FILES['achievements'])
+            
+            # ID 중복 확인
+            for a in achievements:
+                if a['id'] == achievement['id']:
+                    flash('이미 존재하는 업적 ID입니다.', 'error')
+                    return redirect(url_for('admin.config_achievements'))
+            
+            # 업적 추가
+            append_to_csv(CSV_FILES['achievements'], achievement)
+            flash('새 업적이 추가되었습니다.', 'success')
+        
+        # 업적 수정 처리
+        elif 'edit_achievement' in request.form:
+            achievement_id = request.form.get('achievement_id')
+            achievements = read_csv(CSV_FILES['achievements'])
+            updated_achievements = []
+            
+            for a in achievements:
+                if a['id'] == achievement_id:
+                    a['code'] = request.form.get('code')
+                    a['name'] = request.form.get('name')
+                    a['description'] = request.form.get('description')
+                    a['category'] = request.form.get('category')
+                    a['level'] = request.form.get('level')
+                    a['points'] = request.form.get('points')
+                    a['requirement'] = request.form.get('requirement')
+                    a['requirement_value'] = request.form.get('requirement_value')
+                    a['hidden'] = 'True' if request.form.get('hidden') else 'False'
+                    a['icon_url'] = request.form.get('icon_url')
+                    a['enabled'] = 'True' if request.form.get('enabled') else 'False'
+                updated_achievements.append(a)
+            
+            update_csv(CSV_FILES['achievements'], updated_achievements)
+            flash('업적이 업데이트되었습니다.', 'success')
+        
+        # 업적 삭제 처리
+        elif 'delete_achievement' in request.form:
+            achievement_id = request.form.get('achievement_id')
+            achievements = read_csv(CSV_FILES['achievements'])
+            updated_achievements = [a for a in achievements if a['id'] != achievement_id]
+            
+            update_csv(CSV_FILES['achievements'], updated_achievements)
+            flash('업적이 삭제되었습니다.', 'success')
+    
+    # 업적 목록 불러오기
+    achievements = read_csv(CSV_FILES['achievements'])
+    
+    # 업적 카테고리 목록
+    categories = sorted(list(set(a['category'] for a in achievements)))
+    
+    # 업적 요구사항 유형 목록
+    requirements = sorted(list(set(a['requirement'] for a in achievements)))
+    
+    return render_template('admin_achievements.html', 
+                           section='config_achievements', 
+                           achievements=achievements,
+                           categories=categories,
+                           requirements=requirements)
+
+# 레벨 시스템 관리
+@admin_bp.route('/config/levels', methods=['GET', 'POST'])
+@admin_required
+def config_levels():
+    """레벨 시스템 관리"""
+    if request.method == 'POST':
+        # 레벨 추가 처리
+        if 'add_level' in request.form:
+            level = {
+                'level': request.form.get('level'),
+                'title': request.form.get('title'),
+                'required_points': request.form.get('required_points'),
+                'bonus_reward': request.form.get('bonus_reward'),
+                'description': request.form.get('description'),
+                'icon_url': request.form.get('icon_url'),
+                'enabled': 'True' if request.form.get('enabled') else 'False'
+            }
+            
+            # 레벨 추가
+            levels = read_csv(CSV_FILES['levels'])
+            
+            # 레벨 중복 확인
+            for l in levels:
+                if l['level'] == level['level']:
+                    flash('이미 존재하는 레벨입니다.', 'error')
+                    return redirect(url_for('admin.config_levels'))
+            
+            # 레벨 추가
+            append_to_csv(CSV_FILES['levels'], level)
+            flash('새 레벨이 추가되었습니다.', 'success')
+        
+        # 레벨 수정 처리
+        elif 'edit_level' in request.form:
+            level_id = request.form.get('level_id')
+            levels = read_csv(CSV_FILES['levels'])
+            updated_levels = []
+            
+            for l in levels:
+                if l['level'] == level_id:
+                    l['title'] = request.form.get('title')
+                    l['required_points'] = request.form.get('required_points')
+                    l['bonus_reward'] = request.form.get('bonus_reward')
+                    l['description'] = request.form.get('description')
+                    l['icon_url'] = request.form.get('icon_url')
+                    l['enabled'] = 'True' if request.form.get('enabled') else 'False'
+                updated_levels.append(l)
+            
+            update_csv(CSV_FILES['levels'], updated_levels)
+            flash('레벨이 업데이트되었습니다.', 'success')
+        
+        # 레벨 삭제 처리
+        elif 'delete_level' in request.form:
+            level_id = request.form.get('level_id')
+            levels = read_csv(CSV_FILES['levels'])
+            updated_levels = [l for l in levels if l['level'] != level_id]
+            
+            update_csv(CSV_FILES['levels'], updated_levels)
+            flash('레벨이 삭제되었습니다.', 'success')
+    
+    # 레벨 목록 불러오기
+    levels = read_csv(CSV_FILES['levels'])
+    
+    # 레벨 순서대로 정렬
+    levels.sort(key=lambda x: int(x['level']))
+    
+    return render_template('admin_levels.html', 
+                           section='config_levels', 
+                           levels=levels)
+
+# 퀘스트 시스템 관리
+@admin_bp.route('/config/quests', methods=['GET', 'POST'])
+@admin_required
+def config_quests():
+    """퀘스트 시스템 관리"""
+    if request.method == 'POST':
+        # 퀘스트 추가 처리
+        if 'add_quest' in request.form:
+            quest = {
+                'id': request.form.get('id'),
+                'title': request.form.get('title'),
+                'description': request.form.get('description'),
+                'type': request.form.get('type'),
+                'goal_action': request.form.get('goal_action'),
+                'goal_value': request.form.get('goal_value'),
+                'reward_type': request.form.get('reward_type'),
+                'reward_value': request.form.get('reward_value'),
+                'difficulty': request.form.get('difficulty'),
+                'time_limit_hours': request.form.get('time_limit_hours'),
+                'prerequisite_quest_id': request.form.get('prerequisite_quest_id') or '',
+                'enabled': 'True' if request.form.get('enabled') else 'False'
+            }
+            
+            # 퀘스트 추가
+            quests = read_csv(CSV_FILES['quests'])
+            
+            # ID 중복 확인
+            for q in quests:
+                if q['id'] == quest['id']:
+                    flash('이미 존재하는 퀘스트 ID입니다.', 'error')
+                    return redirect(url_for('admin.config_quests'))
+            
+            # 퀘스트 추가
+            append_to_csv(CSV_FILES['quests'], quest)
+            flash('새 퀘스트가 추가되었습니다.', 'success')
+        
+        # 퀘스트 수정 처리
+        elif 'edit_quest' in request.form:
+            quest_id = request.form.get('quest_id')
+            quests = read_csv(CSV_FILES['quests'])
+            updated_quests = []
+            
+            for q in quests:
+                if q['id'] == quest_id:
+                    q['title'] = request.form.get('title')
+                    q['description'] = request.form.get('description')
+                    q['type'] = request.form.get('type')
+                    q['goal_action'] = request.form.get('goal_action')
+                    q['goal_value'] = request.form.get('goal_value')
+                    q['reward_type'] = request.form.get('reward_type')
+                    q['reward_value'] = request.form.get('reward_value')
+                    q['difficulty'] = request.form.get('difficulty')
+                    q['time_limit_hours'] = request.form.get('time_limit_hours')
+                    q['prerequisite_quest_id'] = request.form.get('prerequisite_quest_id') or ''
+                    q['enabled'] = 'True' if request.form.get('enabled') else 'False'
+                updated_quests.append(q)
+            
+            update_csv(CSV_FILES['quests'], updated_quests)
+            flash('퀘스트가 업데이트되었습니다.', 'success')
+        
+        # 퀘스트 삭제 처리
+        elif 'delete_quest' in request.form:
+            quest_id = request.form.get('quest_id')
+            quests = read_csv(CSV_FILES['quests'])
+            updated_quests = [q for q in quests if q['id'] != quest_id]
+            
+            update_csv(CSV_FILES['quests'], updated_quests)
+            flash('퀘스트가 삭제되었습니다.', 'success')
+    
+    # 퀘스트 목록 불러오기
+    quests = read_csv(CSV_FILES['quests'])
+    
+    # 퀘스트 유형별로 분류
+    daily_quests = [q for q in quests if q['type'] == 'daily']
+    weekly_quests = [q for q in quests if q['type'] == 'weekly']
+    
+    # 목표 행동 목록
+    goal_actions = sorted(list(set(q['goal_action'] for q in quests)))
+    
+    # 난이도 목록
+    difficulties = sorted(list(set(q['difficulty'] for q in quests)))
+    
+    return render_template('admin_quests.html', 
+                           section='config_quests', 
+                           quests=quests,
+                           daily_quests=daily_quests,
+                           weekly_quests=weekly_quests,
+                           goal_actions=goal_actions,
+                           difficulties=difficulties)
+
+# 포인트 시스템 관리
+@admin_bp.route('/config/points', methods=['GET', 'POST'])
+@admin_required
+def config_points():
+    """포인트 시스템 관리"""
+    if request.method == 'POST':
+        # 포인트 규칙 추가 처리
+        if 'add_point_rule' in request.form:
+            point_rule = {
+                'action_code': request.form.get('action_code'),
+                'name': request.form.get('name'),
+                'description': request.form.get('description'),
+                'base_points': request.form.get('base_points'),
+                'cooldown_minutes': request.form.get('cooldown_minutes'),
+                'daily_limit': request.form.get('daily_limit'),
+                'enabled': 'True' if request.form.get('enabled') else 'False'
+            }
+            
+            # 포인트 규칙 추가
+            points = read_csv(CSV_FILES['points'])
+            
+            # 액션 코드 중복 확인
+            for p in points:
+                if p['action_code'] == point_rule['action_code']:
+                    flash('이미 존재하는 액션 코드입니다.', 'error')
+                    return redirect(url_for('admin.config_points'))
+            
+            # 포인트 규칙 추가
+            append_to_csv(CSV_FILES['points'], point_rule)
+            flash('새 포인트 규칙이 추가되었습니다.', 'success')
+        
+        # 포인트 규칙 수정 처리
+        elif 'edit_point_rule' in request.form:
+            action_code = request.form.get('action_code')
+            points = read_csv(CSV_FILES['points'])
+            updated_points = []
+            
+            for p in points:
+                if p['action_code'] == action_code:
+                    p['name'] = request.form.get('name')
+                    p['description'] = request.form.get('description')
+                    p['base_points'] = request.form.get('base_points')
+                    p['cooldown_minutes'] = request.form.get('cooldown_minutes')
+                    p['daily_limit'] = request.form.get('daily_limit')
+                    p['enabled'] = 'True' if request.form.get('enabled') else 'False'
+                updated_points.append(p)
+            
+            update_csv(CSV_FILES['points'], updated_points)
+            flash('포인트 규칙이 업데이트되었습니다.', 'success')
+        
+        # 포인트 규칙 삭제 처리
+        elif 'delete_point_rule' in request.form:
+            action_code = request.form.get('action_code')
+            points = read_csv(CSV_FILES['points'])
+            updated_points = [p for p in points if p['action_code'] != action_code]
+            
+            update_csv(CSV_FILES['points'], updated_points)
+            flash('포인트 규칙이 삭제되었습니다.', 'success')
+    
+    # 포인트 규칙 목록 불러오기
+    points = read_csv(CSV_FILES['points'])
+    
+    return render_template('admin_points.html', 
+                           section='config_points', 
+                           points=points)
+
+# 보상 아이템 관리
+@admin_bp.route('/config/reward_items', methods=['GET', 'POST'])
+@admin_required
+def config_reward_items():
+    """보상 아이템 관리"""
+    if request.method == 'POST':
+        # 보상 아이템 추가 처리
+        if 'add_reward_item' in request.form:
+            reward_item = {
+                'id': request.form.get('id'),
+                'name': request.form.get('name'),
+                'description': request.form.get('description'),
+                'price': request.form.get('price'),
+                'type': request.form.get('type'),
+                'effect': request.form.get('effect'),
+                'effect_value': request.form.get('effect_value'),
+                'duration': request.form.get('duration'),
+                'level_required': request.form.get('level_required'),
+                'image_url': request.form.get('image_url'),
+                'enabled': 'True' if request.form.get('enabled') else 'False'
+            }
+            
+            # 보상 아이템 추가
+            reward_items = read_csv(CSV_FILES['reward_items'])
+            
+            # ID 중복 확인
+            for item in reward_items:
+                if item['id'] == reward_item['id']:
+                    flash('이미 존재하는 보상 아이템 ID입니다.', 'error')
+                    return redirect(url_for('admin.config_reward_items'))
+            
+            # 보상 아이템 추가
+            append_to_csv(CSV_FILES['reward_items'], reward_item)
+            flash('새 보상 아이템이 추가되었습니다.', 'success')
+        
+        # 보상 아이템 수정 처리
+        elif 'edit_reward_item' in request.form:
+            item_id = request.form.get('item_id')
+            reward_items = read_csv(CSV_FILES['reward_items'])
+            updated_items = []
+            
+            for item in reward_items:
+                if item['id'] == item_id:
+                    item['name'] = request.form.get('name')
+                    item['description'] = request.form.get('description')
+                    item['price'] = request.form.get('price')
+                    item['type'] = request.form.get('type')
+                    item['effect'] = request.form.get('effect')
+                    item['effect_value'] = request.form.get('effect_value')
+                    item['duration'] = request.form.get('duration')
+                    item['level_required'] = request.form.get('level_required')
+                    item['image_url'] = request.form.get('image_url')
+                    item['enabled'] = 'True' if request.form.get('enabled') else 'False'
+                updated_items.append(item)
+            
+            update_csv(CSV_FILES['reward_items'], updated_items)
+            flash('보상 아이템이 업데이트되었습니다.', 'success')
+        
+        # 보상 아이템 삭제 처리
+        elif 'delete_reward_item' in request.form:
+            item_id = request.form.get('item_id')
+            reward_items = read_csv(CSV_FILES['reward_items'])
+            updated_items = [item for item in reward_items if item['id'] != item_id]
+            
+            update_csv(CSV_FILES['reward_items'], updated_items)
+            flash('보상 아이템이 삭제되었습니다.', 'success')
+    
+    # 보상 아이템 목록 불러오기
+    reward_items = read_csv(CSV_FILES['reward_items'])
+    
+    # 아이템 유형 및 효과 목록
+    item_types = sorted(list(set(item['type'] for item in reward_items)))
+    item_effects = sorted(list(set(item['effect'] for item in reward_items)))
+    
+    return render_template('admin_reward_items.html', 
+                           section='config_reward_items', 
+                           reward_items=reward_items,
+                           item_types=item_types,
+                           item_effects=item_effects)
+
+
+
+

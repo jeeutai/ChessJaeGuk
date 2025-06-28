@@ -1,0 +1,252 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="stocks-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h2 class="mb-0"><i class="fas fa-chart-line me-2"></i>체스제국 주식거래소</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- 주식 시장 정보 -->
+                <div class="col-md-8">
+                    <div class="balance-display mb-3 p-3 bg-light rounded">
+                        <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>현재 잔액: <span class="text-primary fw-bold" id="user-balance">{{ g.user.balance }} {{ system_config.get('currency_symbol', 'CM') }}</span></h5>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-exchange-alt me-2"></i>실시간 주식 시세
+                                <button class="btn btn-sm btn-light float-end refresh-btn" id="refresh-stocks">
+                                    <i class="fas fa-sync-alt me-1"></i>새로고침
+                                </button>
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="stocks-table">
+                                    <thead>
+                                        <tr>
+                                            <th>종목</th>
+                                            <th>현재가</th>
+                                            <th>전일대비</th>
+                                            <th>변동률</th>
+                                            <th>최근 업데이트</th>
+                                            <th>거래</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for stock in stocks %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ stock.name }}</strong>
+                                            </td>
+                                            <td class="current-price">
+                                                {{ stock.current_price }} {{ system_config.get('currency_symbol', 'CM') }}
+                                            </td>
+                                            <td>
+                                                {% set change = stock.current_price|float - stock.previous_price|float %}
+                                                {% if change > 0 %}
+                                                <span class="text-success">+{{ change }}{{ system_config.get('currency_symbol', 'CM') }}</span>
+                                                {% elif change < 0 %}
+                                                <span class="text-danger">{{ change }}{{ system_config.get('currency_symbol', 'CM') }}</span>
+                                                {% else %}
+                                                <span>0{{ system_config.get('currency_symbol', 'CM') }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if stock.change_percent|float > 0 %}
+                                                <span class="text-success">+{{ stock.change_percent }}%</span>
+                                                {% elif stock.change_percent|float < 0 %}
+                                                <span class="text-danger">{{ stock.change_percent }}%</span>
+                                                {% else %}
+                                                <span>0.00%</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ stock.last_update.split()[1].split('.')[0] }}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-success buy-btn" data-bs-toggle="modal" data-bs-target="#buyModal" data-stock-id="{{ stock.id }}" data-stock-name="{{ stock.name }}" data-stock-price="{{ stock.current_price }}">
+                                                        <i class="fas fa-shopping-cart me-1"></i> 매수
+                                                    </button>
+                                                    <button type="button" class="btn btn-danger sell-btn" data-bs-toggle="modal" data-bs-target="#sellModal" data-stock-id="{{ stock.id }}" data-stock-name="{{ stock.name }}" data-stock-price="{{ stock.current_price }}">
+                                                        <i class="fas fa-share-square me-1"></i> 매도
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 주식 차트 -->
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0"><i class="fas fa-chart-area me-2"></i>주가 트렌드</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="position: relative; height:300px;">
+                                <canvas id="stockChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 내 주식 포트폴리오 -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="fas fa-briefcase me-2"></i>내 포트폴리오</h4>
+                        </div>
+                        <div class="card-body">
+                            {% if user_stocks %}
+                                <div class="portfolio-value mb-3">
+                                    <h5>총 보유자산</h5>
+                                    {% set total_value = 0 %}
+                                    {% for stock_id, stock in user_stocks.items() %}
+                                        {% set total_value = total_value + stock.total_value %}
+                                    {% endfor %}
+                                    <h3 class="text-success">{{ total_value|int }}{{ system_config.get('currency_symbol', 'CM') }}</h3>
+                                </div>
+
+                                <div class="my-stocks">
+                                    <h5 class="mb-3">보유 주식</h5>
+                                    <div class="list-group" id="portfolio-list">
+                                        {% for stock_id, stock in user_stocks.items() %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-0">{{ stock.name }}</h6>
+                                                    <small class="text-muted">{{ stock.quantity }}주 보유</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <div>{{ stock.current_price }}{{ system_config.get('currency_symbol', 'CM') }}</div>
+                                                    <div class="text-success">{{ stock.total_value|int }}{{ system_config.get('currency_symbol', 'CM') }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>보유 중인 주식이 없습니다.
+                                </div>
+                                <p>주식을 매수하여 포트폴리오를 구성해보세요!</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 주식 거래 팁 -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h4 class="mb-0"><i class="fas fa-lightbulb me-2"></i>투자 팁</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="tips-list">
+                                <div class="tip-item mb-3">
+                                    <h5><i class="fas fa-check-circle text-success me-2"></i>분산 투자</h5>
+                                    <p class="mb-0">여러 종목에 나누어 투자하면 위험을 줄일 수 있습니다.</p>
+                                </div>
+                                <div class="tip-item mb-3">
+                                    <h5><i class="fas fa-chart-line text-primary me-2"></i>트렌드 분석</h5>
+                                    <p class="mb-0">주가 차트를 참고하여 매수/매도 타이밍을 결정하세요.</p>
+                                </div>
+                                <div class="tip-item">
+                                    <h5><i class="fas fa-coins text-warning me-2"></i>정기적 투자</h5>
+                                    <p class="mb-0">일정 금액을 정기적으로 투자하는 전략도 효과적입니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 매수 모달 -->
+    <div class="modal fade" id="buyModal" tabindex="-1" aria-labelledby="buyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="buyModalLabel">주식 매수</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('stocks.buy_stock') }}" method="post" id="buy-form">
+                        <input type="hidden" name="stock_id" id="buy-stock-id">
+                        <div class="mb-3">
+                            <label for="buy-stock-name" class="form-label">종목명</label>
+                            <input type="text" class="form-control" id="buy-stock-name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="buy-stock-price" class="form-label">현재가</label>
+                            <input type="text" class="form-control" id="buy-stock-price" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="buy-quantity" class="form-label">매수 수량</label>
+                            <input type="number" class="form-control" id="buy-quantity" name="quantity" min="1" value="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="buy-total" class="form-label">총 금액</label>
+                            <input type="text" class="form-control" id="buy-total" readonly>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" form="buy-form" class="btn btn-success">매수 확정</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 매도 모달 -->
+    <div class="modal fade" id="sellModal" tabindex="-1" aria-labelledby="sellModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="sellModalLabel">주식 매도</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('stocks.sell_stock') }}" method="post" id="sell-form">
+                        <input type="hidden" name="stock_id" id="sell-stock-id">
+                        <div class="mb-3">
+                            <label for="sell-stock-name" class="form-label">종목명</label>
+                            <input type="text" class="form-control" id="sell-stock-name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sell-stock-price" class="form-label">현재가</label>
+                            <input type="text" class="form-control" id="sell-stock-price" readonly>
+                        </div>
+                        <div class="mb-3" id="sell-quantity-container">
+                            <label for="sell-quantity" class="form-label">매도 수량</label>
+                            <input type="number" class="form-control" id="sell-quantity" name="quantity" min="1" value="1" required>
+                            <div class="form-text" id="sell-max-quantity"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sell-total" class="form-label">총 금액</label>
+                            <input type="text" class="form-control" id="sell-total" readonly>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" form="sell-form" class="btn btn-danger">매도 확정</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/stocks.js') }}"></script>
+{% endblock %}

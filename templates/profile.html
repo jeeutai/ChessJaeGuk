@@ -1,0 +1,260 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="row g-4">
+        <!-- 사용자 정보 카드 -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-user me-2"></i>내 프로필</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="profile-picture mb-3">
+                            <i class="fas fa-user-circle fa-6x text-primary"></i>
+                            {% if session.badge %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <i class="fas fa-award"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <h4>{{ g.user.nickname }}</h4>
+                        <p class="text-muted">{{ g.user.id }}</p>
+                    </div>
+                    
+                    <div class="profile-info">
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">이메일</span>
+                            <span>{{ g.user.email }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">전화번호</span>
+                            <span>{{ g.user.phone }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">가입일</span>
+                            <span>{{ g.user.created_at.split()[0] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2">
+                            <span class="fw-bold">회{{ system_config.get('currency_symbol', 'CM') }}등급</span>
+                            <span>
+                                {% if g.user.is_admin == 'True' %}
+                                <span class="badge bg-danger">관리자</span>
+                                {% else %}
+                                <span class="badge bg-success">일반회{{ system_config.get('currency_symbol', 'CM') }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">
+                                <i class="fas fa-sign-out-alt me-2"></i>로그아웃
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- QR 코드 카드 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0"><i class="fas fa-qrcode me-2"></i>내 QR 코드</h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ g.user.id }}" alt="QR Code" class="img-fluid qr-code">
+                    </div>
+                    <p class="mb-0">이 QR 코드로 빠르게 송금을 받을 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 계좌 관리 및 송금 -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fas fa-wallet me-2"></i>내 계좌</h3>
+                </div>
+                <div class="card-body">
+                    <div class="account-balance p-3 mb-4 bg-light rounded text-center">
+                        <h4>현재 잔액</h4>
+                        <h2 class="text-success fw-bold">{{ g.user.balance }} {{ system_config.get('currency_symbol', 'CM') }}</h2>
+                    </div>
+                    
+                    <div class="send-money mb-4">
+                        <h4 class="mb-3"><i class="fas fa-paper-plane me-2"></i>{{ country_name }} 송금 서비스</h4>
+                        <a href="{{ url_for('auth.send_money') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-2"></i>송금 페이지로 이동
+                        </a>
+                        <div class="mt-2 small text-muted">
+                            <ul class="mb-0">
+                                <li>송금 범위: {{ min_transfer_amount }}{{ currency_name }} ~ {{ max_transfer_amount }}{{ currency_name }}</li>
+                                {% if transfer_fee_percent > 0 %}
+                                <li>송금 수수료: {{ transfer_fee_percent }}%</li>
+                                {% else %}
+                                <li>수수료 없음</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="qr-scan mb-4">
+                        <h4 class="mb-3"><i class="fas fa-qrcode me-2"></i>QR 코드로 송금하기</h4>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-primary" id="scanQRBtn">
+                                <i class="fas fa-camera me-2"></i>QR 코드 스캔
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 거래 내역 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="fas fa-history me-2"></i>거래 내역</h3>
+                    <select class="form-select form-select-sm" style="width: auto;" id="transactionFilter">
+                        <option value="all">전체 내역</option>
+                        <option value="in">입금 내역</option>
+                        <option value="out">출금 내역</option>
+                    </select>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>날짜</th>
+                                    <th>구분</th>
+                                    <th>거래자</th>
+                                    <th>금액</th>
+                                    <th>잔액</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if transactions %}
+                                    {% for tx in transactions %}
+                                    <tr class="
+                                        {% if tx.sender_id == g.user.id %}out-transaction
+                                        {% elif tx.receiver_id == g.user.id %}in-transaction{% endif %}
+                                    ">
+                                        <td>{{ tx.timestamp.split()[0] }}</td>
+                                        <td>
+                                            {% if tx.sender_id == g.user.id %}
+                                                <span class="badge bg-warning text-dark">출금</span>
+                                            {% elif tx.receiver_id == g.user.id %}
+                                                <span class="badge bg-success">입금</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tx.sender_id == g.user.id %}
+                                                {{ tx.receiver_id }}
+                                            {% else %}
+                                                {{ tx.sender_id }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tx.sender_id == g.user.id %}
+                                                <span class="text-danger">-{{ tx.amount }}{{ currency_name }}</span>
+                                            {% else %}
+                                                <span class="text-success">+{{ tx.amount }}{{ currency_name }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>-</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-3">거래 내역이 없습니다.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">* 최근 30일 거래 내역만 표시됩니다.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- QR 스캔 모달 -->
+    <div class="modal fade" id="qrScanModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">QR 코드 스캔</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-center">
+                        <div id="qr-reader" style="width: 300px;"></div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <p>카메라를 QR 코드에 향하게 하세요.</p>
+                    </div>
+                    <div class="mt-3" id="qr-result" style="display: none;">
+                        <div class="alert alert-success">
+                            <p class="mb-0">QR 코드를 스캔했습니다. 사용자 ID: <span id="scanned-id"></span></p>
+                        </div>
+                        <form action="{{ url_for('auth.send_money') }}" method="post" id="qr-form">
+                            <input type="hidden" id="qr-receiver-id" name="receiver_id">
+                            <div class="mb-3">
+                                <label for="qr-amount" class="form-label">송금 금액</label>
+                                <input type="number" class="form-control" id="qr-amount" name="amount" min="1" max="{{ g.user.balance }}" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>송금하기
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // QR 스캔 버튼 클릭 이벤트
+    document.getElementById('scanQRBtn').addEventListener('click', function() {
+        const qrModal = new bootstrap.Modal(document.getElementById('qrScanModal'));
+        qrModal.show();
+        
+        // 실제 구현에서는 QR 스캐너 라이브러리를 사용하지만, 여기서는 모의 스캔 처리
+        setTimeout(function() {
+            document.getElementById('qr-result').style.display = 'block';
+            document.getElementById('scanned-id').textContent = 'user123';
+            document.getElementById('qr-receiver-id').value = 'user123';
+        }, 2000);
+    });
+    
+    // 거래 내역 필터링
+    document.getElementById('transactionFilter').addEventListener('change', function() {
+        const filter = this.value;
+        const inTransactions = document.querySelectorAll('.in-transaction');
+        const outTransactions = document.querySelectorAll('.out-transaction');
+        
+        if (filter === 'all') {
+            inTransactions.forEach(tr => tr.style.display = 'table-row');
+            outTransactions.forEach(tr => tr.style.display = 'table-row');
+        } else if (filter === 'in') {
+            inTransactions.forEach(tr => tr.style.display = 'table-row');
+            outTransactions.forEach(tr => tr.style.display = 'none');
+        } else if (filter === 'out') {
+            inTransactions.forEach(tr => tr.style.display = 'none');
+            outTransactions.forEach(tr => tr.style.display = 'table-row');
+        }
+    });
+});
+</script>
+{% endblock %}

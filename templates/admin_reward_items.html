@@ -1,0 +1,399 @@
+{% extends 'admin.html' %}
+
+{% block title %}보상 아이템 관리 - 관리자 페이지{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">보상 아이템 관리</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRewardItemModal">
+                        <i class="fas fa-plus me-2"></i>새 보상 아이템 추가
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이미지</th>
+                                    <th>이름</th>
+                                    <th>설명</th>
+                                    <th>가격</th>
+                                    <th>효과</th>
+                                    <th>필요 레벨</th>
+                                    <th>상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in reward_items %}
+                                <tr>
+                                    <td><code>{{ item.id }}</code></td>
+                                    <td>
+                                        {% if item.image_url %}
+                                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="reward-icon" width="36" height="36">
+                                        {% else %}
+                                        <span class="badge bg-secondary">이미지 없음</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.description }}</td>
+                                    <td>{{ item.price }} 포인트</td>
+                                    <td>{{ item.type }} ({{ item.effect_value }}{% if item.duration %} / {{ item.duration }}분{% endif %})</td>
+                                    <td>{{ item.level_required }}</td>
+                                    <td>
+                                        {% if item.enabled == 'True' %}
+                                        <span class="badge bg-success">활성화</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">비활성화</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info edit-reward-item" 
+                                                data-id="{{ item.id }}"
+                                                data-name="{{ item.name }}"
+                                                data-description="{{ item.description }}"
+                                                data-price="{{ item.price }}"
+                                                data-type="{{ item.type }}"
+                                                data-effect="{{ item.effect }}"
+                                                data-effect-value="{{ item.effect_value }}"
+                                                data-duration="{{ item.duration }}"
+                                                data-level-required="{{ item.level_required }}"
+                                                data-image-url="{{ item.image_url }}"
+                                                data-enabled="{{ item.enabled }}"
+                                                data-bs-toggle="modal" data-bs-target="#editRewardItemModal">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger delete-reward-item" 
+                                                data-id="{{ item.id }}"
+                                                data-name="{{ item.name }}"
+                                                data-bs-toggle="modal" data-bs-target="#deleteRewardItemModal">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">보상 아이템 가이드</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">아이템 시스템 개요</h6>
+                        <p>사용자가 획득한 포인트로 다양한 보상 아이템을 구매할 수 있습니다. 아이템은 사용자에게 일시적 혹은 영구적인 혜택을 제공합니다.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>아이템 유형:</h6>
+                        <ul>
+                            <li><strong>머니 부스터</strong>: 일정 시간 동안 돈 획득량 증가</li>
+                            <li><strong>포인트 부스터</strong>: 일정 시간 동안 포인트 획득량 증가</li>
+                            <li><strong>즉시 보상</strong>: 사용 즉시 특정 보상 지급</li>
+                            <li><strong>게임 부스터</strong>: 일정 시간 동안 게임 승률 또는 보상 증가</li>
+                            <li><strong>특별 아이템</strong>: 프로필 배지, 특별 이모티콘 등</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">아이템 구매 통계</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="itemsChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 새 보상 아이템 추가 모달 -->
+<div class="modal fade" id="addRewardItemModal" tabindex="-1" aria-labelledby="addRewardItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRewardItemModalLabel">새 보상 아이템 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_reward_items') }}">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id" class="form-label">아이템 ID *</label>
+                            <input type="text" class="form-control" id="id" name="id" required 
+                                   placeholder="money_booster_1, profile_badge_gold 등">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="골드 머니 부스터, VIP 배지 등">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" 
+                                  placeholder="이 아이템에 대한 상세 설명"></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="price" class="form-label">가격 (포인트) *</label>
+                            <input type="number" class="form-control" id="price" name="price" required min="1" value="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="type" class="form-label">아이템 유형 *</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="money_booster">머니 부스터</option>
+                                <option value="point_booster">포인트 부스터</option>
+                                <option value="instant_reward">즉시 보상</option>
+                                <option value="game_booster">게임 부스터</option>
+                                <option value="special_item">특별 아이템</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="level_required" class="form-label">필요 레벨 *</label>
+                            <input type="number" class="form-control" id="level_required" name="level_required" required min="1" value="1">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="effect" class="form-label">효과 *</label>
+                            <select class="form-select" id="effect" name="effect" required>
+                                <option value="money_multiplier">머니 획득량 증가</option>
+                                <option value="point_multiplier">포인트 획득량 증가</option>
+                                <option value="instant_money">즉시 머니 획득</option>
+                                <option value="instant_points">즉시 포인트 획득</option>
+                                <option value="game_win_rate">게임 승률 증가</option>
+                                <option value="profile_badge">프로필 배지</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="effect_value" class="form-label">효과 값 *</label>
+                            <input type="text" class="form-control" id="effect_value" name="effect_value" required value="1.5">
+                            <div class="form-text">승수는 1.5, 금액은 1000 등의 형태로 입력</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="duration" class="form-label">지속 시간 (분)</label>
+                            <input type="number" class="form-control" id="duration" name="duration" min="0" value="60">
+                            <div class="form-text">0은 영구적인 효과를 의미합니다</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="image_url" class="form-label">이미지 URL</label>
+                        <input type="text" class="form-control" id="image_url" name="image_url" 
+                               placeholder="/static/images/items/booster.png">
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enabled" name="enabled" checked>
+                        <label class="form-check-label" for="enabled">활성화</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="add_reward_item" class="btn btn-primary">추가</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 보상 아이템 수정 모달 -->
+<div class="modal fade" id="editRewardItemModal" tabindex="-1" aria-labelledby="editRewardItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRewardItemModalLabel">보상 아이템 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_reward_items') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_id" name="id">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_name" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_price" class="form-label">가격 (포인트) *</label>
+                            <input type="number" class="form-control" id="edit_price" name="price" required min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">설명</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="edit_type" class="form-label">아이템 유형 *</label>
+                            <select class="form-select" id="edit_type" name="type" required>
+                                <option value="money_booster">머니 부스터</option>
+                                <option value="point_booster">포인트 부스터</option>
+                                <option value="instant_reward">즉시 보상</option>
+                                <option value="game_booster">게임 부스터</option>
+                                <option value="special_item">특별 아이템</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_effect" class="form-label">효과 *</label>
+                            <select class="form-select" id="edit_effect" name="effect" required>
+                                <option value="money_multiplier">머니 획득량 증가</option>
+                                <option value="point_multiplier">포인트 획득량 증가</option>
+                                <option value="instant_money">즉시 머니 획득</option>
+                                <option value="instant_points">즉시 포인트 획득</option>
+                                <option value="game_win_rate">게임 승률 증가</option>
+                                <option value="profile_badge">프로필 배지</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="edit_level_required" class="form-label">필요 레벨 *</label>
+                            <input type="number" class="form-control" id="edit_level_required" name="level_required" required min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_effect_value" class="form-label">효과 값 *</label>
+                            <input type="text" class="form-control" id="edit_effect_value" name="effect_value" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_duration" class="form-label">지속 시간 (분)</label>
+                            <input type="number" class="form-control" id="edit_duration" name="duration" min="0">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_image_url" class="form-label">이미지 URL</label>
+                        <input type="text" class="form-control" id="edit_image_url" name="image_url">
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="edit_enabled" name="enabled">
+                        <label class="form-check-label" for="edit_enabled">활성화</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="edit_reward_item" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 보상 아이템 삭제 모달 -->
+<div class="modal fade" id="deleteRewardItemModal" tabindex="-1" aria-labelledby="deleteRewardItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteRewardItemModalLabel">보상 아이템 삭제</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('admin.config_reward_items') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="delete_id" name="id">
+                    <p>정말로 <strong id="delete_item_name"></strong> 아이템을 삭제하시겠습니까?</p>
+                    <div class="alert alert-warning">
+                        이 작업은 되돌릴 수 없습니다. 이미 구매한 사용자의 아이템은 영향을 받지 않을 수 있습니다.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" name="delete_reward_item" class="btn btn-danger">삭제</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 보상 아이템 수정 모달 데이터 설정
+    const editButtons = document.querySelectorAll('.edit-reward-item');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('edit_id').value = this.dataset.id;
+            document.getElementById('edit_name').value = this.dataset.name;
+            document.getElementById('edit_description').value = this.dataset.description;
+            document.getElementById('edit_price').value = this.dataset.price;
+            document.getElementById('edit_type').value = this.dataset.type;
+            document.getElementById('edit_effect').value = this.dataset.effect;
+            document.getElementById('edit_effect_value').value = this.dataset.effectValue;
+            document.getElementById('edit_duration').value = this.dataset.duration;
+            document.getElementById('edit_level_required').value = this.dataset.levelRequired;
+            document.getElementById('edit_image_url').value = this.dataset.imageUrl;
+            document.getElementById('edit_enabled').checked = this.dataset.enabled === 'True';
+        });
+    });
+    
+    // 보상 아이템 삭제 모달 데이터 설정
+    const deleteButtons = document.querySelectorAll('.delete-reward-item');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('delete_id').value = this.dataset.id;
+            document.getElementById('delete_item_name').textContent = this.dataset.name;
+        });
+    });
+    
+    // 아이템 구매 통계 차트
+    const ctx = document.getElementById('itemsChart').getContext('2d');
+    const itemsChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['머니 부스터', '포인트 부스터', '즉시 보상', '게임 부스터', '특별 아이템'],
+            datasets: [{
+                label: '아이템 구매 비율',
+                data: [30, 25, 20, 15, 10],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 206, 86)',
+                    'rgb(75, 192, 192)',
+                    'rgb(153, 102, 255)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

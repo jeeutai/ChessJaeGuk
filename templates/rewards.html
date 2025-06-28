@@ -1,0 +1,560 @@
+{% extends 'layout.html' %}
+
+{% block title %}포인트 및 보상{% endblock %}
+
+{% block styles %}
+<style>
+  .rewards-container {
+    padding: 20px;
+  }
+  
+  .rewards-header {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .rewards-header::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    z-index: 0;
+  }
+  
+  .points-container {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .points-title {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+  }
+  
+  .points-value {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .points-subtitle {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  
+  .level-info {
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .level-badge {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-right: 15px;
+  }
+  
+  .level-progress {
+    width: 150px;
+  }
+  
+  .level-progress .progress {
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 5px;
+  }
+  
+  .level-progress .progress-bar {
+    background-color: white;
+  }
+  
+  .level-progress small {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  
+  .reward-tabs {
+    display: flex;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  .reward-tab {
+    padding: 8px 15px;
+    margin-right: 10px;
+    cursor: pointer;
+    border-radius: 20px;
+    white-space: nowrap;
+    transition: all 0.3s;
+    font-size: 14px;
+  }
+  
+  .reward-tab.active {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  .category-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f0f0f0;
+    color: #333;
+  }
+  
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  
+  .item-card {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+  
+  .item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .item-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .item-description {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  
+  .item-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  
+  .points-badge {
+    background-color: #f8f9fa;
+    color: #495057;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .not-enough-points {
+    opacity: 0.7;
+    background-color: #f9f9f9;
+  }
+  
+  .level-required {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 6px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    color: #495057;
+    margin-top: 5px;
+  }
+  
+  @media (max-width: 576px) {
+    .item-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .rewards-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .level-info {
+      margin-top: 15px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rewards-container">
+  <div class="rewards-header">
+    <div class="points-container">
+      <div class="points-title">사용 가능한 포인트</div>
+      <div class="points-value">{{ user_points }} P</div>
+      <div class="points-subtitle">게임, 업적, 로그인으로 포인트를 모으세요!</div>
+    </div>
+    
+    <div class="level-info">
+      <div class="level-badge">{{ user_level.current.level }}</div>
+      <div class="level-progress">
+        {% if user_level.next %}
+          {% set progress = (user_level.points - user_level.current.required_points|int) / (user_level.next.required_points|int - user_level.current.required_points|int) * 100 %}
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <small>다음 레벨까지 {{ user_level.next.required_points|int - user_level.points }} 포인트 남음</small>
+        {% else %}
+          <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <small>최고 레벨에 도달했습니다!</small>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('rewards.level') }}" class="btn btn-sm btn-outline-light">레벨 정보</a>
+    </div>
+  </div>
+  
+  <div class="reward-tabs">
+    <div class="reward-tab active" data-tab="all">전체</div>
+    <div class="reward-tab" data-tab="game">게임 부스터</div>
+    <div class="reward-tab" data-tab="economy">경제 아이템</div>
+    <div class="reward-tab" data-tab="profile">프로필 아이템</div>
+    <div class="reward-tab" data-tab="special">특별 아이템</div>
+    <div class="reward-tab" data-tab="achievements">업적</div>
+    <div class="reward-tab" data-tab="history">내역</div>
+  </div>
+  
+  <div class="tab-content active" id="all-tab">
+    <!-- 게임 부스터 -->
+    <div class="category-title">
+      <i class="fas fa-gamepad"></i> 게임 부스터
+    </div>
+    <div class="item-grid">
+      {% for item in game_boosters %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- 경제 아이템 -->
+    <div class="category-title">
+      <i class="fas fa-money-bill-wave"></i> 경제 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in economy_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- 프로필 아이템 -->
+    <div class="category-title">
+      <i class="fas fa-user-circle"></i> 프로필 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in profile_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <!-- 특별 아이템 -->
+    <div class="category-title">
+      <i class="fas fa-star"></i> 특별 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in special_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-content" id="game-tab">
+    <div class="category-title">
+      <i class="fas fa-gamepad"></i> 게임 부스터
+    </div>
+    <div class="item-grid">
+      {% for item in game_boosters %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-content" id="economy-tab">
+    <div class="category-title">
+      <i class="fas fa-money-bill-wave"></i> 경제 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in economy_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-content" id="profile-tab">
+    <div class="category-title">
+      <i class="fas fa-user-circle"></i> 프로필 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in profile_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-content" id="special-tab">
+    <div class="category-title">
+      <i class="fas fa-star"></i> 특별 아이템
+    </div>
+    <div class="item-grid">
+      {% for item in special_items %}
+        <div class="item-card {% if user_points < item.price|int %}not-enough-points{% endif %}">
+          <div>
+            <div class="item-title">{{ item.name }}</div>
+            <div class="item-description">{{ item.description }}</div>
+            <div class="d-flex flex-wrap">
+              <small class="me-2">{% if item.duration|int > 0 %}사용기간: {{ item.duration }}일{% else %}영구 사용{% endif %}</small>
+              {% if item.level_required|int > 1 %}
+              <span class="level-required">필요 레벨: {{ item.level_required }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="item-price">
+            <span class="points-badge">{{ item.price }} P</span>
+            {% if user_points >= item.price|int %}
+              <form action="{{ url_for('rewards.purchase', item_id=item.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-primary">구매</button>
+              </form>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled>포인트 부족</button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-content" id="achievements-tab">
+    <div class="category-title">
+      <i class="fas fa-trophy"></i> 업적
+    </div>
+    <div class="text-center mb-4">
+      <a href="{{ url_for('rewards.achievements') }}" class="btn btn-primary">업적 시스템 바로가기</a>
+    </div>
+    <p class="text-center">다양한 업적을 달성하여 포인트를 획득하세요.</p>
+  </div>
+  
+  <div class="tab-content" id="history-tab">
+    <div class="category-title">
+      <i class="fas fa-history"></i> 포인트 내역
+    </div>
+    <div class="text-center mb-4">
+      <a href="{{ url_for('rewards.points_history') }}" class="btn btn-primary">포인트 내역 바로가기</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tabs = document.querySelectorAll('.reward-tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // 탭 활성화 상태 변경
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // 탭 콘텐츠 표시
+      const tabId = `${tab.dataset.tab}-tab`;
+      tabContents.forEach(content => {
+        content.classList.remove('active');
+        if (content.id === tabId) {
+          content.classList.add('active');
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

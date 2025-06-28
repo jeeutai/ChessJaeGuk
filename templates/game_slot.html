@@ -1,0 +1,609 @@
+{% extends "layout.html" %}
+
+{% block extra_css %}
+<style>
+    .game-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .slot-machine {
+        background-color: #222;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .slot-display {
+        display: flex;
+        justify-content: center;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .slot-reel {
+        background-color: #ddd;
+        width: 90px;
+        height: 120px;
+        margin: 0 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 50px;
+        border: 3px solid #333;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+    
+    .slot-reel.spinning {
+        background-image: linear-gradient(to bottom, #ddd 0%, #bbb 100%);
+        animation: spin 0.2s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 30px; }
+    }
+    
+    .controls {
+        margin: 20px auto;
+        max-width: 500px;
+    }
+    
+    .bet-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .btn-spin {
+        background-color: #e74c3c;
+        color: white;
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        border-radius: 50px;
+        border: none;
+        box-shadow: 0 4px 0 #c0392b;
+        transition: all 0.2s;
+    }
+    
+    .btn-spin:hover {
+        background-color: #c0392b;
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #c0392b;
+    }
+    
+    .btn-spin:active {
+        transform: translateY(4px);
+        box-shadow: none;
+    }
+    
+    .btn-spin:disabled {
+        background-color: #95a5a6;
+        box-shadow: 0 4px 0 #7f8c8d;
+        cursor: not-allowed;
+    }
+    
+    .result-display {
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        display: none;
+    }
+    
+    .win {
+        background-color: #2ecc71;
+        color: white;
+    }
+    
+    .lose {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    .jackpot {
+        background-color: #f39c12;
+        color: white;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .payout-table {
+        background-color: #34495e;
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .payout-table h4 {
+        margin-top: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding-bottom: 10px;
+    }
+    
+    .payout-table .table {
+        color: white;
+    }
+    
+    .payout-symbol {
+        font-size: 24px;
+        vertical-align: middle;
+    }
+    
+    .balance-display {
+        background-color: #2c3e50;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+    
+    .odds-display {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 15px;
+        font-size: 0.9rem;
+    }
+    
+    .statistics {
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .statistics h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0"><i class="fas fa-slot-machine me-2"></i>슬롯 머신</h2>
+            <a href="{{ url_for('games.index') }}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>게임 목록
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>같은 이모지 3개가 나오면 승리! 🍒🍒🍒 조합이 나오면 대박 당첨금이 지급됩니다.
+            </div>
+            
+            <div class="slot-machine">
+                <div class="balance-display">
+                    <i class="fas fa-coins me-2"></i>현재 잔액: <span id="balance">{{ g.user.balance }}</span>{{ currency_name }}
+                </div>
+                
+                <div class="slot-display">
+                    <div class="slot-reel" id="reel1">?</div>
+                    <div class="slot-reel" id="reel2">?</div>
+                    <div class="slot-reel" id="reel3">?</div>
+                </div>
+                
+                <div class="controls">
+                    <div class="bet-controls">
+                        <button class="btn btn-outline-light" id="decrease-bet">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <div class="input-group" style="width: 200px;">
+                            <span class="input-group-text">배팅금액</span>
+                            <input type="number" class="form-control text-center" id="bet-amount" value="{{ min_bet }}" min="{{ min_bet }}" max="{{ max_bet }}">
+                            <span class="input-group-text">{{ currency_name }}</span>
+                        </div>
+                        <button class="btn btn-outline-light" id="increase-bet">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <button class="btn-spin" id="spin-button">
+                        <i class="fas fa-play me-2"></i>돌리기
+                    </button>
+                    
+                    <div class="odds-display">
+                        최소 배팅: {{ min_bet }}{{ currency_name }} | 최대 배팅: {{ max_bet }}{{ currency_name }}
+                    </div>
+                </div>
+                
+                <div class="result-display" id="result"></div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="payout-table">
+                        <h4><i class="fas fa-trophy me-2"></i>당첨 조합표</h4>
+                        <div class="table-responsive">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td><span class="payout-symbol">🍒🍒🍒</span></td>
+                                        <td>잭팟! 배팅액의 10배</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="payout-symbol">🍋🍋🍋</span></td>
+                                        <td>배팅액의 5배</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="payout-symbol">🍊🍊🍊</span></td>
+                                        <td>배팅액의 4배</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="payout-symbol">🍇🍇🍇</span></td>
+                                        <td>배팅액의 3배</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="payout-symbol">🍉🍉🍉</span></td>
+                                        <td>배팅액의 2배</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="payout-symbol">같은 이모지 2개</span></td>
+                                        <td>배팅액 그대로 돌려받음</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="statistics">
+                        <h4><i class="fas fa-chart-pie me-2"></i>내 게임 통계</h4>
+                        <div class="stat-item">
+                            <span>총 게임 수:</span>
+                            <span id="total-games">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>승리:</span>
+                            <span id="total-wins">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>패배:</span>
+                            <span id="total-losses">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>잭팟 횟수:</span>
+                            <span id="total-jackpots">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>최대 당첨금:</span>
+                            <span id="max-win">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 투자금:</span>
+                            <span id="total-bets">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>총 획득금:</span>
+                            <span id="total-returns">0{{ currency_name }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>수익률:</span>
+                            <span id="roi">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 게임 결과 모달 -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalTitle">게임 결과</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center" id="resultModalBody">
+                <div id="resultIcon" class="mb-3" style="font-size: 48px;"></div>
+                <h4 id="resultMessage" class="mb-3"></h4>
+                <p id="resultDetails" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" id="playAgainBtn" data-bs-dismiss="modal">다시 플레이</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 변수 초기화
+        const reels = [
+            document.getElementById('reel1'),
+            document.getElementById('reel2'),
+            document.getElementById('reel3')
+        ];
+        
+        const spinButton = document.getElementById('spin-button');
+        const betAmount = document.getElementById('bet-amount');
+        const decreaseBet = document.getElementById('decrease-bet');
+        const increaseBet = document.getElementById('increase-bet');
+        const balanceDisplay = document.getElementById('balance');
+        const resultDisplay = document.getElementById('result');
+        
+        const minBet = {{ min_bet }};
+        const maxBet = {{ max_bet }};
+        let balance = {{ g.user.balance }};
+        
+        // 게임 통계
+        let stats = {
+            totalGames: 0,
+            wins: 0,
+            losses: 0,
+            jackpots: 0,
+            maxWin: 0,
+            totalBets: 0,
+            totalReturns: 0
+        };
+        
+        // 슬롯 심볼 배열
+        const symbols = ['🍒', '🍋', '🍊', '🍇', '🍉', '🍌', '🍎', '🍍'];
+        
+        // 승리 조합 및 배당률
+        const winCombinations = {
+            '🍒🍒🍒': 10, // 잭팟
+            '🍋🍋🍋': 5,
+            '🍊🍊🍊': 4,
+            '🍇🍇🍇': 3,
+            '🍉🍉🍉': 2
+        };
+        
+        // 배팅 금액 제어
+        decreaseBet.addEventListener('click', function() {
+            let currentBet = parseInt(betAmount.value);
+            if (currentBet > minBet) {
+                betAmount.value = currentBet - 100;
+            }
+        });
+        
+        increaseBet.addEventListener('click', function() {
+            let currentBet = parseInt(betAmount.value);
+            if (currentBet < maxBet && currentBet < balance) {
+                betAmount.value = currentBet + 100;
+            }
+        });
+        
+        betAmount.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            if (value < minBet) this.value = minBet;
+            if (value > maxBet) this.value = maxBet;
+            if (value > balance) this.value = balance;
+        });
+        
+        // 스핀 버튼 클릭 이벤트
+        spinButton.addEventListener('click', function() {
+            const bet = parseInt(betAmount.value);
+            
+            // 배팅 금액 유효성 검사
+            if (isNaN(bet) || bet < minBet || bet > maxBet) {
+                alert('유효한 배팅 금액을 입력하세요.');
+                return;
+            }
+            
+            // 잔액 확인
+            if (bet > balance) {
+                alert('잔액이 부족합니다.');
+                return;
+            }
+            
+            // 배팅 금액 차감
+            balance -= bet;
+            balanceDisplay.textContent = balance;
+            
+            // 통계 업데이트
+            stats.totalGames++;
+            stats.totalBets += bet;
+            
+            // 스핀 애니메이션 시작
+            spinButton.disabled = true;
+            resultDisplay.style.display = 'none';
+            
+            // 릴에 스피닝 클래스 추가
+            reels.forEach(reel => {
+                reel.innerHTML = '?';
+                reel.classList.add('spinning');
+            });
+            
+            // 각 릴 결과 설정 (시간차를 두고)
+            const results = [];
+            
+            setTimeout(() => {
+                reels[0].classList.remove('spinning');
+                results[0] = getRandomSymbol();
+                reels[0].innerHTML = results[0];
+            }, 1000);
+            
+            setTimeout(() => {
+                reels[1].classList.remove('spinning');
+                results[1] = getRandomSymbol();
+                reels[1].innerHTML = results[1];
+            }, 1500);
+            
+            setTimeout(() => {
+                reels[2].classList.remove('spinning');
+                results[2] = getRandomSymbol();
+                reels[2].innerHTML = results[2];
+                
+                // 결과 확인 및 표시
+                setTimeout(() => checkResult(results, bet), 500);
+            }, 2000);
+        });
+        
+        // 랜덤 심볼 선택
+        function getRandomSymbol() {
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+        
+        // 결과 확인
+        function checkResult(results, bet) {
+            const combination = results.join('');
+            let multiplier = 0;
+            let message = '';
+            let isJackpot = false;
+            
+            // 모든 심볼이 같은 경우
+            if (results[0] === results[1] && results[1] === results[2]) {
+                multiplier = winCombinations[combination] || 1;
+                
+                if (combination === '🍒🍒🍒') {
+                    message = `잭팟! ${bet}${currency_name}의 ${multiplier}배를 획득했습니다!`;
+                    isJackpot = true;
+                    stats.jackpots++;
+                } else {
+                    message = `승리! ${bet}${currency_name}의 ${multiplier}배를 획득했습니다!`;
+                }
+                
+                stats.wins++;
+            }
+            // 2개의 심볼만 같은 경우
+            else if (results[0] === results[1] || results[1] === results[2] || results[0] === results[2]) {
+                multiplier = 1;
+                message = `2개 일치! 배팅금 ${bet}${currency_name}을 돌려받습니다.`;
+                stats.wins++;
+            }
+            // 모두 다른 심볼
+            else {
+                message = `아쉽네요. ${bet}${currency_name}을 잃었습니다.`;
+                stats.losses++;
+            }
+            
+            // 결과에 따른 처리
+            if (multiplier > 0) {
+                const winAmount = bet * multiplier;
+                balance += winAmount;
+                balanceDisplay.textContent = balance;
+                
+                stats.totalReturns += winAmount;
+                if (winAmount > stats.maxWin) {
+                    stats.maxWin = winAmount;
+                }
+                
+                // 결과 표시
+                resultDisplay.textContent = message;
+                resultDisplay.className = 'result-display ' + (isJackpot ? 'jackpot' : 'win');
+                
+                // 결과 모달
+                document.getElementById('resultModalTitle').textContent = isJackpot ? '🎉 대박! 잭팟! 🎉' : '승리!';
+                document.getElementById('resultIcon').innerHTML = isJackpot ? '💰' : '🏆';
+                document.getElementById('resultMessage').textContent = isJackpot ? 
+                    `축하합니다! 잭팟에 당첨되셨습니다!` : 
+                    `축하합니다! 승리하셨습니다!`;
+                document.getElementById('resultDetails').textContent = 
+                    `${bet}${currency_name}의 ${multiplier}배인 ${winAmount}${currency_name}을 획득했습니다!`;
+                
+                // 서버에 결과 저장
+                saveGameResult(bet, 'win', winAmount);
+            } else {
+                // 결과 표시
+                resultDisplay.textContent = message;
+                resultDisplay.className = 'result-display lose';
+                
+                // 결과 모달
+                document.getElementById('resultModalTitle').textContent = '아쉽네요';
+                document.getElementById('resultIcon').innerHTML = '😢';
+                document.getElementById('resultMessage').textContent = '이번에는 운이 없었네요!';
+                document.getElementById('resultDetails').textContent = 
+                    `${bet}${currency_name}을 잃었습니다. 다시 도전해보세요!`;
+                
+                // 서버에 결과 저장
+                saveGameResult(bet, 'lose', 0);
+            }
+            
+            // 통계 업데이트 화면에 반영
+            updateStatistics();
+            
+            // 결과 모달 표시
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            resultModal.show();
+            
+            // 재시작 버튼 이벤트
+            document.getElementById('playAgainBtn').onclick = function() {
+                if (balance >= minBet) {
+                    spinButton.disabled = false;
+                }
+            };
+            
+            // 스핀 버튼 활성화 (잔액이 충분한 경우)
+            setTimeout(() => {
+                resultDisplay.style.display = 'block';
+                if (balance >= minBet) {
+                    spinButton.disabled = false;
+                }
+            }, 1000);
+        }
+        
+        // 서버에 게임 결과 저장
+        function saveGameResult(betAmount, result, winAmount) {
+            // AJAX 요청으로 서버에 결과 전송
+            fetch('{{ url_for("games.place_bet") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'game_id': 'slot',
+                    'bet_amount': betAmount,
+                    'result': result,
+                    'win_amount': winAmount
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('결과 저장 실패:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('오류 발생:', error);
+            });
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            document.getElementById('total-games').textContent = stats.totalGames;
+            document.getElementById('total-wins').textContent = stats.wins;
+            document.getElementById('total-losses').textContent = stats.losses;
+            document.getElementById('total-jackpots').textContent = stats.jackpots;
+            document.getElementById('max-win').textContent = `${stats.maxWin}${currency_name}`;
+            document.getElementById('total-bets').textContent = `${stats.totalBets}${currency_name}`;
+            document.getElementById('total-returns').textContent = `${stats.totalReturns}${currency_name}`;
+            
+            // ROI 계산 (Return on Investment)
+            const roi = stats.totalBets > 0 ? ((stats.totalReturns - stats.totalBets) / stats.totalBets * 100).toFixed(2) : '0.00';
+            document.getElementById('roi').textContent = `${roi}%`;
+        }
+    });
+</script>
+{% endblock %}
